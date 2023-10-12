@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: data-service
+  cloud:
+    config:
+      uri: http://cfg:8088
+      name: ${spring.application.name}, common-config, service
+

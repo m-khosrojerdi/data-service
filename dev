@@ -1,0 +1,163 @@
+#!/bin/bash
+
+# Configuration
+HOST_NAME=khosrojerdi   # Remote host name
+HOST=back.mapnamind.com # Remote host IP or domain
+PROJECT_DIR=$(pwd)      # Current project directory
+# Extract module name and version from Maven POM file
+MODULE_NAME=$(xmlstarlet sel -N x=http://maven.apache.org/POM/4.0.0 -t -v "//x:project/x:artifactId" "$PROJECT_DIR/pom.xml")
+MODULE_VERSION=$(xmlstarlet sel -N x=http://maven.apache.org/POM/4.0.0 -t -v "//x:project/x:version" "$PROJECT_DIR/pom.xml")
+SERVICE_NAME=$(echo "$MODULE_NAME" | sed -r 's/-service/.service/g')   # Convert module name to service name format
+DEPLOY_PATH=".deploy/$MODULE_NAME"                                     # Remote deployment directory
+SOURCE_JAR_FILE="$PROJECT_DIR/target/$MODULE_NAME-$MODULE_VERSION.jar" # Path to the JAR file to deploy
+DESTINATION=$DEPLOY_PATH/$(basename "$SOURCE_JAR_FILE")                # Destination path for JAR file on remote host
+SSH_CMD="ssh $HOST_NAME@$HOST"                                         # SSH command for remote access
+SSH_DIR=$HOME/.ssh                                                     # SSH directory for keys
+
+# Logging
+LOG_FILE="deployment.log" # Log file for script output
+
+log() {
+  # Function for logging messages with timestamp
+  local log_message="$1"
+  echo "$(date +'%Y-%m-%d %H:%M:%S') - $log_message" >>$LOG_FILE
+}
+
+# Error Handling
+handle_error() {
+  # Function for handling errors
+  local error_message="$1"
+  echo "Error: $error_message"
+  log "Error: $error_message"
+  exit 1
+}
+
+# Check Dependencies
+check_dependencies() {
+  # Function to check and install missing dependencies
+  local missing_deps=()
+  if ! dpkg -s xmlstarlet >/dev/null 2>&1; then
+    missing_deps+=("xmlstarlet")
+  fi
+
+  if [ ${#missing_deps[@]} -gt 0 ]; then
+    echo "The following dependencies are missing: ${missing_deps[*]}"
+    echo "Please enter your password to install them."
+    sudo apt install "${missing_deps[@]}" || handle_error "Failed to install dependencies."
+  fi
+}
+
+sshKey() {
+  # Function for create SSH key and add SSH key to remote server
+  YN=n
+  # Check if the .ssh directory exists
+  if [ ! -d "$SSH_DIR" ]; then
+    echo -e "The .ssh directory does not exist.\nTo deploy the jar file need SSH key in the remote server.\nDo you want to create a SSH key and continue the deployment process? (Y/N): "
+    read -r YN
+
+    if [[ "$YN" =~ ^[Yy]$ ]]; then
+      ssh-keygen -t rsa -f "$SSH_DIR/back_rsa"
+      ssh-copy-id -i "$SSH_DIR/back_rsa.pub" $HOST_NAME@$HOST
+    fi
+
+  # Check if the id_rsa.pub file exists
+  elif [ ! -f "$SSH_DIR/back_rsa.pub" ]; then
+    echo -e "The back_rsa.pub file does not exist in the .ssh directory.\nAre you ready to create file? (Y/N): "
+    read -r YN
+    if [[ "$YN" =~ ^[Yy]$ ]]; then
+      ssh-keygen -t rsa -f "$SSH_DIR/back_rsa"
+      ssh-copy-id -i "$SSH_DIR/back_rsa.pub" $HOST_NAME@$HOST
+    fi
+  fi
+}
+
+# Build
+build() {
+  # Function for building the Java project using Maven
+  log "Building the project..."
+  mvn -amd clean package -Pprod -DskipTests=true || handle_error "Maven build failed."
+}
+
+# Run
+run() {
+  # Function for running the application in the local system
+  log "Running the project in local system..."
+  java -jar "$SOURCE_JAR_FILE"
+  log "Running completed."
+}
+
+# Deploy
+deploy() {
+  # Function for deploying the application to the remote host
+  log "Deploying the application..."
+  $SSH_CMD "if [ ! -d $DEPLOY_PATH ]; then mkdir -p $DEPLOY_PATH; fi;" || handle_error "Failed to create remote deployment directory."
+  scp "$SOURCE_JAR_FILE" "$HOST_NAME"@"$HOST":"$DESTINATION"
+  $SSH_CMD "deploy $MODULE_NAME" || handle_error "Failed to execute remote deploy command."
+  log "Deployment completed."
+}
+
+# Start/Stop/restart Service
+manage_service() {
+  # Function for starting, stopping, or restarting the remote service
+  local action="$1"
+  log "${action^}ing the service..."
+  $SSH_CMD "sudo systemctl $action $SERVICE_NAME" || handle_error "Failed to $action service."
+}
+
+# Logs of Service
+service_log() {
+  # Function for showing logs of remote service
+  $SSH_CMD "sudo tail -f /logs/$MODULE_NAME/$MODULE_NAME.log"
+}
+
+# Main script
+case $1 in
+key)
+  # Regenerate SSH key pair and copy public key to remote host
+  regenerateSSHKey
+  ;;
+build)
+  # Check dependencies, build the project
+  check_dependencies
+  build
+  ;;
+run)
+  # Check dependencies, build the project, and run
+  check_dependencies
+  build
+  run
+  ;;
+deploy)
+  # Check dependencies, generate SSH key if not exist, build, and deploy
+  check_dependencies
+  sshKey
+  build
+  deploy
+  ;;
+all)
+  # Check dependencies, generate SSH key if not exist, build, deploy, restart service, and show service logs
+  check_dependencies
+  sshKey
+  build
+  deploy
+  manage_service restart
+  service_log
+  ;;
+start | stop | restart)
+  # Check dependencies, generate SSH key if not exist, restart service, and show service logs
+  check_dependencies
+  sshKey
+  manage_service "$1"
+  service_log
+  ;;
+log)
+  # Generate SSH key if not exist, and display service logs
+  sshKey
+  service_log
+  ;;
+*)
+  # Display usage information for invalid commands
+  echo "Usage: $0 {key|build|run|deploy|all|start|stop|restart|log}"
+  exit 1
+  ;;
+esac
