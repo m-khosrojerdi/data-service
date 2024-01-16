@@ -3,7 +3,7 @@ package com.mapnamind.data.service;
 import com.mapnamind.common.api.ApiService;
 import com.mapnamind.common.dto.data.DataDTO;
 import com.mapnamind.common.enumeration.ServiceName;
-import com.mapnamind.common.model.Data;
+import com.mapnamind.common.entity.Data;
 import com.mapnamind.data.DataApplicationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +14,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Calendar;
-import java.util.Date;
 
 public class DataApiServiceTest extends DataApplicationTest {
 

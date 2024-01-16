@@ -1,6 +1,6 @@
 package com.mapnamind.data.view;
 
-import com.mapnamind.common.model.Data;
+import com.mapnamind.common.entity.Data;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
