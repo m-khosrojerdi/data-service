@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # Configuration
-HOST_NAME=khosrojerdi   # Remote host name
 HOST=back.mapnamind.com # Remote host IP or domain
 PROJECT_DIR=$(pwd)      # Current project directory
 # Extract module name and version from Maven POM file
