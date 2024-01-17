@@ -1,9 +1,9 @@
-FROM nexus.mapnamind.com/mavenjava17:cst AS build
+FROM mavenjava17:cst AS build
 COPY . /usr/src/app/src
 WORKDIR /usr/src/app/src
-RUN mvn  clean package -DskipTests=true
+RUN mvn clean package -DskipTests=true
 
 FROM nexus.mapnamind.com/openjdk:cst
-COPY --from=build /usr/src/app/src/target/data-service-1.0.0.jar /data-service-1.0.0.jar 
+COPY --from=build /usr/src/app/src/target/APP.jar /APP.jar 
 EXPOSE 8080
-ENTRYPOINT ["java","-jar","/data-service-1.0.0.jar"]
+ENTRYPOINT ["java","-jar","/APP.jar"]
