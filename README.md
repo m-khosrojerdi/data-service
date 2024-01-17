@@ -1,4 +1,4 @@
-# Data Service
+#Data Service
 
 You can use dev Bash script for deploying and managing a Java application on the local system or remote server. It includes features for building the project, deploying it to the server, starting and stopping the service, and viewing logs. The script is designed to be extensible and easy to use.
 
