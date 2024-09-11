@@ -1,8 +1,8 @@
 package com.mapnamind.data.controller;
 
-import com.mapnamind.common.api.ApiService;
+import com.mapnamind.web.api.ApiService;
 import com.mapnamind.common.dto.data.DataDTO;
-import com.mapnamind.common.enumeration.ServiceName;
+import com.mapnamind.web.enumeration.ServiceName;
 import com.mapnamind.common.entity.Data;
 import com.mapnamind.data.view.*;
 import lombok.RequiredArgsConstructor;
