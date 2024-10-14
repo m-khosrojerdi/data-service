@@ -9,7 +9,7 @@ build:
  script:
    - chmod 775 script.sh
    - ./script.sh
-   - docker build . -t $TAG_LATEST
+   - docker build . --add-host=nexus.mapnamind.com:192.168.1.149 -t $TAG_LATEST
    - docker image tag $TAG_LATEST $TAG_COMMIT
    - docker image push $TAG_LATEST
    - docker image push $TAG_COMMIT
