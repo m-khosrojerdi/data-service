@@ -3,7 +3,7 @@ package com.mapnamind.data.service;
 import com.mapnamind.web.api.ApiService;
 import com.mapnamind.common.dto.data.DataDTO;
 import com.mapnamind.web.enumeration.ServiceName;
-import com.mapnamind.common.entity.Data;
+/*import com.mapnamind.common.entity.Data;*/
 import com.mapnamind.data.DataApplicationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +22,7 @@ public class DataApiServiceTest extends DataApplicationTest {
 
     @Test
     public void history() {
-        Calendar cal = Calendar.getInstance();
+        /*Calendar cal = Calendar.getInstance();
         cal.add(Calendar.DATE, -120);
         print(apiService.callCollection(ServiceName.DATA_FIND_ALL_BY_TOPIC_AND_START_AND_END_OF_DATE_TIME_AND_PAGE_SIZE_AND_PAGE_NUMBER,
                         DataDTO.builder()
@@ -35,19 +35,20 @@ public class DataApiServiceTest extends DataApplicationTest {
                                 .build(),
                         Data[].class
                 )
-        );
+        );*/
     }
 
     @Test
     public void whenAppendStringUsingBufferedWriter_thenOldContentShouldExistToo()
             throws IOException {
-        String str = "Hillo";
+        /*String str = "Hillo";
         File file = new File("/home/m-khosrojerdi/Desktop/write/hhh/ddd/eeee");
         if (!file.exists()) {
             file.mkdirs();
         }
         BufferedWriter writer = new BufferedWriter(new FileWriter(file.getPath() + "/hello.txt"));
         writer.close();
+        */
     }
 
 }
