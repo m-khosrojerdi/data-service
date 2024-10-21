@@ -1,5 +1,6 @@
 stages:
   - build
+  - deploy
 variables:
   GIT_STRATEGY: clone
   TAG_LATEST: nexus.mapnamind.com/data-service:latest
@@ -14,5 +15,11 @@ build:
    - docker image push $TAG_LATEST
    - docker image push $TAG_COMMIT
    - docker image rm --force $TAG_LATEST $TAG_COMMIT
+deploy:
+  stage: deploy
+  script:
+    - ssh root@192.168.1.101 " kubectl delete -f MAPNAMIND/wallet-service.yml"
+    - bash /home/gitlab-runner/kub.sh $TAG_LATEST
+    - ssh root@192.168.1.101 "kubectl apply  -f MAPNAMIND/wallet-service.yml"
  rules:
    - if: '$CI_COMMIT_BRANCH == "dev"'
