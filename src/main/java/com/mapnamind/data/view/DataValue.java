@@ -11,7 +11,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 public class DataValue implements Serializable {
 
-    private Long x;
-    private Double y;
+    private String x;
+    private String y;
 
 }

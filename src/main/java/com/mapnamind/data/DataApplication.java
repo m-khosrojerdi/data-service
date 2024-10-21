@@ -1,9 +1,11 @@
 package com.mapnamind.data;
 
-import com.mapnamind.common.BaseApplication;
+import com.mapnamind.web.EnterpriseApplication;
 import org.springframework.boot.SpringApplication;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-public class DataApplication extends BaseApplication {
+@EnableJpaRepositories
+public class DataApplication extends EnterpriseApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(DataApplication.class, args);
