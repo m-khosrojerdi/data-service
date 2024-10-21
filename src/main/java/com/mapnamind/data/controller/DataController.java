@@ -1,37 +1,39 @@
 package com.mapnamind.data.controller;
 
-import com.mapnamind.web.api.ApiService;
-import com.mapnamind.common.dto.data.DataDTO;
-import com.mapnamind.web.enumeration.ServiceName;
-import com.mapnamind.common.entity.Data;
-import com.mapnamind.data.view.*;
+import com.google.gson.Gson;
+import com.mapnamind.data.service.impl.DataService;
+import com.mapnamind.data.view.SignalSelectorView;
+import com.mapnamind.web.Base;
+import com.mapnamind.web.enumeration.AuthorizeType;
+import com.mapnamind.web.view.ResponseBody;
+import com.mapnamind.web.view.ResponseEntityTemplate;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
-import org.springframework.core.io.Resource;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import static com.mapnamind.web.enumeration.Swagger.ACCESS_TOKEN;
+import static com.mapnamind.web.enumeration.Swagger.LANGUAGE;
 
 @RestController
 @CrossOrigin(origins = "*")
 @RequestMapping("/data")
 @RequiredArgsConstructor
-public class DataController {
-    private final ApiService apiService;
-    private final ModelMapper modelMapper;
-    private static final String DOWNLOAD_URL = "/download/";
+public class DataController extends Base {
+    private final DataService dataService;
+    private final ResponseEntityTemplate responseEntityTemplate;
+    private final Gson gson;
 
     @PostMapping("/signalSelector")
-    public SignalSelectorView signalSelector(@RequestBody SignalSelectorView view) {
-        for (SignalView signal : view.getSignals()) {
+    @PreAuthorize(AuthorizeType.CUSTOMER)
+    @SecurityRequirements(value = {
+            @SecurityRequirement(name = ACCESS_TOKEN),
+            @SecurityRequirement(name = LANGUAGE)})
+    public ResponseBody<?> signalSelector(@RequestBody SignalSelectorView view) {
+//        ValueView valueView;
+
+        /*for (SignalView signal : view.getSignals()) {
             if (signal.getIsProperty().equals("0")) {
                 signal.setIsProperty(null);
             } else if (signal.getIsProperty().equals("1")) {
@@ -42,124 +44,192 @@ public class DataController {
                     signal.setTopic(signal.getTopic().replace("/{" + matcher.group() + "}", ""));
                 }
             }
-            List<Data> dataList = apiService.callCollection(ServiceName.DATA_FIND_ALL_BY_TOPIC_AND_START_AND_END_OF_DATE_TIME,
-                    DataDTO.builder()
-                            .topic(signal.getTopic())
-                            .startDate(view.getStartDate())
-                            .endDate(view.getEndDate())
-                            .isProperty(signal.getIsProperty())
-                            .build(),
-                    Data[].class
-            );
+            List<Data> dataList = dataService.findAllByTopicAndLogTime(signal.getTopic(), view.getStartDate(),
+                    view.getEndDate(), signal.getIsProperty());
+
             if (dataList != null) {
-                List<DataValue> dataValues = dataList.stream().map(data -> modelMapper.typeMap(Data.class, DataValue.class)
-                        .addMapping(Data::getDatetime, DataValue::setX)
-                        .addMapping(Data::getValue, DataValue::setY)
-                        .map(data)).toList();
+                List<DataValue> dataValues = dataList.stream().map(data -> map(DataMapper.class).sourceToTarget(data)).toList();
                 ValueView valueView = new ValueView();
                 valueView.setName(signal.getTopic());
                 valueView.setData(dataValues);
                 view.addValue(valueView);
             }
-        }
-        return view;
-    }
-
-    @PostMapping("/history")
-    public DataView history(@RequestBody DataHistoryView view) {
-        if (view.getPageSize() <= 0 && view.getPageNumber() <= 0) {
-            return null;
-        }
-        List<Data> values = apiService.callCollection(ServiceName.DATA_FIND_ALL_BY_TOPIC_AND_START_AND_END_OF_DATE_TIME_AND_PAGE_SIZE_AND_PAGE_NUMBER,
-                DataDTO.builder()
-                        .topic(view.getTopic())
-                        .startDate(view.getStartDate())
-                        .endDate(view.getEndDate())
-                        .isProperty(view.getIsProperty())
-                        .pageSize(view.getPageSize())
-                        .pageNumber(view.getPageNumber())
-                        .build(),
-                Data[].class
-        );
-        Integer total = apiService.call(ServiceName.DATA_TOTAL_RECORD,
-                DataDTO.builder()
-                        .topic(view.getTopic())
-                        .startDate(view.getStartDate())
-                        .endDate(view.getEndDate())
-                        .isProperty(view.getIsProperty())
-                        .build(),
-                Integer.class
-        );
-        DataView response = new DataView();
-        response.setValues(values);
-        response.setTotal(total);
-        return response;
-    }
-
-    @PostMapping("/export")
-    public FileDownloadView export(@RequestBody SignalSelectorView view) {
-        FileDownloadView fileDownloads = new FileDownloadView();
-        String fileName = null;
-        for (SignalView signal : view.getSignals()) {
-            String mindTopic = signal.getTopic();
-            if (signal.getIsProperty().equals("0")) {
-                signal.setIsProperty(null);
-            } else if (signal.getIsProperty().equals("1")) {
-                Pattern pattern = Pattern.compile("\"\\w+\"");
-                Matcher matcher = pattern.matcher(signal.getTopic());
-                if (matcher.find()) {
-                    signal.setIsProperty(matcher.group().replaceAll("\"", ""));
-                    signal.setTopic(signal.getTopic().replace("/{" + matcher.group() + "}", ""));
-                }
-            }
-            fileName = apiService.call(ServiceName.DATA_EXPORT,
-                    DataDTO.builder()
-                            .topic(signal.getTopic())
-                            .startDate(view.getStartDate())
-                            .endDate(view.getEndDate())
-                            .isProperty(signal.getIsProperty())
-                            .build(),
-                    String.class
-            );
-            if (fileName != null) {
-                FileDownloadView.DownloadView downloadView = new FileDownloadView.DownloadView();
-                downloadView.setTopic(mindTopic);
-                downloadView.setDownloadPath(ServletUriComponentsBuilder.fromCurrentContextPath()
-                        .path("/data" + DOWNLOAD_URL)
-                        .path(fileName)
-                        .toUriString());
-                fileDownloads.setDownloads(downloadView);
-            }
-        }
-        return fileDownloads;
-    }
-
-    @GetMapping(DOWNLOAD_URL + "{fileName}")
-    public ResponseEntity<Resource> download(@PathVariable("fileName") String fileName) {
-        Resource resource = apiService.call(ServiceName.DATA_FIND_FILE_RESOURCE,
-                DataDTO.builder().fileName(fileName).build(), Resource.class);
-        if (resource != null) {
-            try {
-                String path = resource.getFile().getAbsolutePath();
-                return ResponseEntity.ok()
-                        .contentType(contentType(path))
-                        .body(resource);
-            } catch (IOException e) {
-                e.printStackTrace();
-                return null;
-            }
-        }
-        return null;
-    }
-
-    public MediaType contentType(String path) {
-        String contentType;
-        contentType = ((ServletRequestAttributes)
-                RequestContextHolder.currentRequestAttributes()).getRequest().getServletContext().getMimeType(path);
-        if (contentType == null) {
-            return MediaType.APPLICATION_OCTET_STREAM;
-        }
-        return MediaType.parseMediaType(contentType);
+        }*/
+        String json = "{\n" +
+                "    \"signals\": [\n" +
+                "        {\n" +
+                "            \"topic\": \"sou/6055f900be60/data/plug\",\n" +
+                "            \"isProperty\": \"voltage\"\n" +
+                "        }\n" +
+                "    ],\n" +
+                "    \"values\": [\n" +
+                "        {\n" +
+                "            \"name\": \"sou/6055f900be60/data/plug\",\n" +
+                "            \"data\": [\n" +
+                "                {\n" +
+                "                    \"x\": 1728901352855,\n" +
+                "                    \"y\": 250.54\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901352855,\n" +
+                "                    \"y\": 250.54\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901352855,\n" +
+                "                    \"y\": 250.54\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901361639,\n" +
+                "                    \"y\": 247.87\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901361705,\n" +
+                "                    \"y\": 247.87\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901361716,\n" +
+                "                    \"y\": 247.87\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901364861,\n" +
+                "                    \"y\": 250.54\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901364861,\n" +
+                "                    \"y\": 250.54\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901364862,\n" +
+                "                    \"y\": 250.54\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901368864,\n" +
+                "                    \"y\": 247.87\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901368864,\n" +
+                "                    \"y\": 247.87\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901368865,\n" +
+                "                    \"y\": 247.87\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901372867,\n" +
+                "                    \"y\": 250.54\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901372867,\n" +
+                "                    \"y\": 250.54\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901372867,\n" +
+                "                    \"y\": 250.54\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901376900,\n" +
+                "                    \"y\": 246.3\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901376966,\n" +
+                "                    \"y\": 246.3\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901376981,\n" +
+                "                    \"y\": 246.3\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901381912,\n" +
+                "                    \"y\": 249.46\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901381941,\n" +
+                "                    \"y\": 249.46\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901381979,\n" +
+                "                    \"y\": 249.46\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901384870,\n" +
+                "                    \"y\": 247.87\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901384871,\n" +
+                "                    \"y\": 247.87\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901384871,\n" +
+                "                    \"y\": 247.87\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901388871,\n" +
+                "                    \"y\": 250.54\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901388871,\n" +
+                "                    \"y\": 250.54\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901388872,\n" +
+                "                    \"y\": 250.54\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901392877,\n" +
+                "                    \"y\": 247.87\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901392877,\n" +
+                "                    \"y\": 247.87\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901392877,\n" +
+                "                    \"y\": 247.87\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901397330,\n" +
+                "                    \"y\": 248.93\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901397466,\n" +
+                "                    \"y\": 248.93\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901397474,\n" +
+                "                    \"y\": 248.93\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901400881,\n" +
+                "                    \"y\": 247.87\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901400881,\n" +
+                "                    \"y\": 247.87\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901400882,\n" +
+                "                    \"y\": 247.87\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901404883,\n" +
+                "                    \"y\": 252.16\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901404883,\n" +
+                "                    \"y\": 252.16\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"x\": 1728901404883,\n" +
+                "                    \"y\": 252.16\n" +
+                "                }\n" +
+                "            ]\n" +
+                "        }\n" +
+                "    ],\n" +
+                "    \"startDate\": \"2024/10/14-10:22:27\",\n" +
+                "    \"endDate\": \"2024/10/14-10:23:27\"\n" +
+                "}\n" +
+                "\n";
+        return responseEntityTemplate.response("controller.data.signalSelector.successful.200", gson.fromJson(json, SignalSelectorView.class));
     }
 
 }
