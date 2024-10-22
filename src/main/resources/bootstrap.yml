@@ -1,4 +1,6 @@
 spring:
+  logstash:
+    host: log.mapnamind.com:5045
   application:
     name: data-service
   cloud:
