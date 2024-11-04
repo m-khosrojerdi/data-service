@@ -6,6 +6,9 @@ variables:
   TAG_LATEST: nexus.mapnamind.com/data-service:latest
   TAG_COMMIT: nexus.mapnamind.com/data-service:$CI_COMMIT_SHORT_SHA
 build:
+ tags:
+   - NMB
+
  stage: build
  script:
    - ls -l
@@ -17,6 +20,9 @@ build:
    - docker image push $TAG_COMMIT
    - docker image rm --force $TAG_LATEST $TAG_COMMIT
 deploy:
+  tags:
+    - NMB
+
   stage: deploy
   script:
     - |
