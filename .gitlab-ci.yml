@@ -4,21 +4,27 @@ stages:
 variables:
   GIT_STRATEGY: clone
   TAG_LATEST: nexus.mapnamind.com/data-service:latest
+  TAG_TEST: nexus.mapnamind.com/data-service:test
   TAG_COMMIT: nexus.mapnamind.com/data-service:$CI_COMMIT_SHORT_SHA
 build:
- tags:
-   - NMB
-
- stage: build
- script:
-   - ls -l
-   - chmod 775 script.sh
-   - ./script.sh
-   - docker build . --add-host=nexus.mapnamind.com:192.168.1.149 -t $TAG_LATEST
-   - docker image tag $TAG_LATEST $TAG_COMMIT
-   - docker image push $TAG_LATEST
-   - docker image push $TAG_COMMIT
-   - docker image rm --force $TAG_LATEST $TAG_COMMIT
+  stage: build
+  tags:
+    - NMB
+  script:
+    - chmod 775 script.sh
+    - ./script.sh
+    - |
+      if [[ "$CI_COMMIT_BRANCH" == "main" ]]; then
+        docker build . --add-host=nexus.mapnamind.com:192.168.1.149 -t $TAG_LATEST
+        docker image tag $TAG_LATEST $TAG_COMMIT
+        docker image push $TAG_LATEST
+        docker image push $TAG_COMMIT
+        docker image rm --force $TAG_LATEST $TAG_COMMIT
+      else
+        docker build . --add-host=nexus.mapnamind.com:192.168.1.149 -t $TAG_TEST
+        docker image push $TAG_TEST
+        docker image rm --force $TAG_TEST
+      fi
 deploy:
   tags:
     - NMB
