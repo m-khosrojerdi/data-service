@@ -12,6 +12,7 @@ build:
     - NMB
   script:
     - chmod 775 script.sh
+    - |
       if [[ "$CI_COMMIT_BRANCH" == "main" ]]; then
       ./script.sh prod
       docker build . --add-host=nexus.mapnamind.com:192.168.1.149 -t $TAG_LATEST
