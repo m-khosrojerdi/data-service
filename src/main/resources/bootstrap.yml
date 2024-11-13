@@ -1,10 +1,7 @@
 spring:
-  logstash:
-    host: log.mapnamind.com:5045
   application:
     name: data-service
   cloud:
     config:
       uri: http://config.mapnamind.com
       name: ${spring.application.name}, common-config, datasource, service
-
