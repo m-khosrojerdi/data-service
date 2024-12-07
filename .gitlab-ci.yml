@@ -34,7 +34,7 @@ deploy:
   script:
     - |
       if [[ "$CI_COMMIT_BRANCH" == "dev" ]]; then
-        ssh root@192.168.1.25 " cd /root/compose &&  docker compose stop data-service && docker image rm --force nexus.mapnamind.com/data-service:test&&docker compose start data-service"
+        ssh root@192.168.1.25 " cd /root/compose &&  docker compose stop data-service && docker image rm --force nexus.mapnamind.com/data-service:test&& docker image pull nexus.mapnamind.com/data-service:test&& docker compose start data-service"
       elif [[ "$CI_COMMIT_BRANCH" == "main" ]]; then
         ssh root@192.168.1.101 "kubectl delete -f MAPNAMIND/data-service.yml"
         bash /home/gitlab-runner/kub.sh $TAG_LATEST
