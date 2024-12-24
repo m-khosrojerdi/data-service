@@ -1,6 +1,6 @@
 package com.mapnamind.data.view;
 
-import com.mapnamind.common.annotation.DateFormat;
+import com.mapnamind.common.annotation.Date;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -19,10 +19,10 @@ public class SignalSelectorView implements Serializable {
     @NotEmpty
     private List<SignalView> signals;
 
-    @DateFormat
+    @Date
     private String startDate;
 
-    @DateFormat
+    @Date
     private String endDate;
 
 }

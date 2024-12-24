@@ -6,7 +6,6 @@ import com.mapnamind.data.dto.DataProjectionDTO;
 import com.mapnamind.data.repository.DataRepository;
 import com.mapnamind.data.service.IDataService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -26,6 +25,6 @@ public class DataService implements IDataService {
         } catch (Exception e) {
             throw new ServiceException("service.common.databaseError.9003");
         }
-
     }
+
 }
