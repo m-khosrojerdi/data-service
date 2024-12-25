@@ -30,6 +30,7 @@ import static com.mapnamind.web.enumeration.Swagger.LANGUAGE;
 @RequestMapping("/data")
 @RequiredArgsConstructor
 public class DataController extends Base {
+
     private final DataService dataService;
     private final ResponseEntityTemplate responseEntityTemplate;
 
@@ -39,7 +40,6 @@ public class DataController extends Base {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
     public ResponseBody<?> signalSelector(@Valid @RequestBody SignalSelectorView view) {
-
         for (SignalView signal : view.getSignals()) {
             if (signal.getIsProperty().equals("0")) {
                 signal.setIsProperty(null);
