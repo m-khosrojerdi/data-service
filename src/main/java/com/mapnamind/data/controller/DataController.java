@@ -30,7 +30,6 @@ import static com.mapnamind.web.enumeration.Swagger.LANGUAGE;
 @RequestMapping("/data")
 @RequiredArgsConstructor
 public class DataController extends Base {
-
     private final DataService dataService;
     private final ResponseEntityTemplate responseEntityTemplate;
 
@@ -40,6 +39,7 @@ public class DataController extends Base {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
     public ResponseBody<?> signalSelector(@Valid @RequestBody SignalSelectorView view) {
+
         for (SignalView signal : view.getSignals()) {
             if (signal.getIsProperty().equals("0")) {
                 signal.setIsProperty(null);
@@ -51,17 +51,18 @@ public class DataController extends Base {
                     signal.setTopic(signal.getTopic().replace("/{" + matcher.group() + "}", ""));
                 }
             }
-
             List<DataProjectionDTO> dataList = dataService.findAllByTopicAndLogTime(signal.getTopic(), view.getStartDate(),
                     view.getEndDate(), signal.getIsProperty());
 
             if (dataList != null && !dataList.isEmpty()) {
                 List<DataValue> dataValues = dataList.stream().map(data -> map(DataMapper.class).sourceToTarget(data)).toList();
-                return responseEntityTemplate.response("controller.data.signalSelector.successful.200",
-                        ValueView.builder().name(signal.getTopic()).data(dataValues).build());
+                view.addValue(ValueView.builder().name(signal.getTopic()).data(dataValues).build());
+            }
+            else {
+                view.addValue(ValueView.builder().name(signal.getTopic()).data(List.of()).build());
             }
         }
-        return responseEntityTemplate.response("controller.data.signalSelector.notFound.9009");
+        return responseEntityTemplate.response("controller.data.signalSelector.successful.200", view);
     }
 
 }

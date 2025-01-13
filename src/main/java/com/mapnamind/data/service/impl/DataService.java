@@ -20,8 +20,11 @@ public class DataService implements IDataService {
     public List<DataProjectionDTO> findAllByTopicAndLogTime(String topic, String startDate, String endDate, String isProperty) {
         try {
             List<DataProjection> data = dataRepository.findAllByTopicAndLogTime(topic, startDate, endDate, isProperty);
-            return data.stream().map(item -> DataProjectionDTO.builder()
-                    .value(item.getValue()).dateTime(item.getDateTime()).build()).toList();
+            if(data != null && !data.isEmpty()) {
+                return data.stream().map(item -> DataProjectionDTO.builder()
+                        .value(item.getValue()).dateTime(item.getDateTime()).build()).toList();
+            }
+            return List.of();
         } catch (Exception e) {
             throw new ServiceException("service.common.databaseError.9003");
         }
