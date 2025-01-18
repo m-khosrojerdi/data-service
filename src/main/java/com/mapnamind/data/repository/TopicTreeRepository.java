@@ -24,4 +24,6 @@ public interface TopicTreeRepository extends JpaRepository<TopicTree, Long> {
 
     List<TopicTree> findAllByParentIsNotNull();
 
+    TopicTree findByDescription(String description);
+
 }

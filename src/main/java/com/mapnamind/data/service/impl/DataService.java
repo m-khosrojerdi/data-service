@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-
 @Service
 @RequiredArgsConstructor
 public class DataService implements IDataService {
@@ -20,7 +19,7 @@ public class DataService implements IDataService {
     public List<DataProjectionDTO> findAllByTopicAndLogTime(String topic, String startDate, String endDate, String isProperty) {
         try {
             List<DataProjection> data = dataRepository.findAllByTopicAndLogTime(topic, startDate, endDate, isProperty);
-            if(data != null && !data.isEmpty()) {
+            if (data != null && !data.isEmpty()) {
                 return data.stream().map(item -> DataProjectionDTO.builder()
                         .value(item.getValue()).dateTime(item.getDateTime()).build()).toList();
             }

@@ -1,6 +1,7 @@
 package com.mapnamind.data.service.impl;
 
 import com.google.gson.reflect.TypeToken;
+import com.mapnamind.common.execption.ServiceException;
 import com.mapnamind.common.model.entity.TopicTree;
 import com.mapnamind.common.view.device.DeviceView;
 import com.mapnamind.data.dto.TopicTreeDTO;
@@ -33,25 +34,10 @@ public class TopicTreeService implements ITopicTreeService {
     @Override
     public List<TopicTreeDTO> findParentsTree() {
         List<DeviceView> devices = apiService.call(ServiceName.USER_GET_ALL_SERIAL_NUMBER_BY_ACCESS_LEVEL, null, SERIAL_NUMBERS_TYPE);
-
-        Set<String> deviceTypeNames = devices.stream()
-                .map(DeviceView::getDeviceTypeName)
-                .collect(Collectors.toSet());
-        List<TopicTree> rootTopicTrees = repository.findAllByTopicAndParentIsNull(deviceTypeNames.stream().toList());
-        rootTopicTrees.addAll(
-                //find all TopicTrees that have `data` value
-                repository.findAllByTopicIsDataAndParent(
-                        rootTopicTrees.stream().map(TopicTree::getId).toList(), "%alarm%")
-        );
-
-        List<TopicTreeDTO> dto = new ArrayList<>();
-        if (!devices.isEmpty()) {
-            dto = generateParentTree(Mappers.getMapper(TopicTreeDTOMapper.class).sourcesToTargets(rootTopicTrees), devices);
-            if (!devices.isEmpty()) {
-                devices.clear();
-            }
+        if (devices.isEmpty()) {
+            throw new ServiceException("service.topicTree.common.emptyDevices.9004");
         }
-        return dto;
+        return findTopicTrees(devices);
     }
 
     @Override
@@ -64,8 +50,52 @@ public class TopicTreeService implements ITopicTreeService {
     @Override
     public List<TopicTreeDTO> findBySerialOrDescription(String serialNumber, String description) {
         List<DeviceView> devices = apiService.call(ServiceName.USER_GET_ALL_SERIAL_NUMBER_BY_ACCESS_LEVEL, null, SERIAL_NUMBERS_TYPE);
+        if (devices == null || devices.isEmpty()) {
+            throw new ServiceException("service.topicTree.common.emptyDevices.9004");
+        }
+        if (serialNumber != null) {
+            Optional<DeviceView> device = devices.stream().filter(d -> d.getSerialNumber().equals(serialNumber)).findFirst();
+            if (device.isEmpty()) {
+                throw new ServiceException("service.topicTree.findBySerialOrDescription.serialNumberNotExists.9005");
+            }
+            return findTopicTrees(Collections.singletonList(device.get()));
 
+        } else if (description != null) {
+            TopicTree entity = repository.findByDescription(description);
+            List<TopicTree> rootTopicTrees = Collections.singletonList(entity);
+            findAllParentsOfThisTopic(entity.getParent(), rootTopicTrees);
+            List<TopicTreeDTO> dto = generateParentTree(Mappers.getMapper(TopicTreeDTOMapper.class).sourcesToTargets(rootTopicTrees), devices);
+            devices.clear();
+            return dto;
+        }
         return List.of();
+    }
+
+    private void findAllParentsOfThisTopic(TopicTree parent, List<TopicTree> rootTopicTrees) {
+        Optional<TopicTree> entity = repository.findById(parent.getId());
+        if (entity.isEmpty()) {
+            return;
+        }
+        rootTopicTrees.add(entity.get());
+        if (parent.getParent() != null) {
+            findAllParentsOfThisTopic(parent.getParent(), rootTopicTrees);
+        }
+    }
+
+    private List<TopicTreeDTO> findTopicTrees(List<DeviceView> devices) {
+        Set<String> deviceTypeNames = devices.stream()
+                .map(DeviceView::getDeviceTypeName)
+                .collect(Collectors.toSet());
+        List<TopicTree> rootTopicTrees = repository.findAllByTopicAndParentIsNull(deviceTypeNames.stream().toList());
+        rootTopicTrees.addAll(
+                //find all TopicTrees that have `data` values
+                repository.findAllByTopicIsDataAndParent(
+                        rootTopicTrees.stream().map(TopicTree::getId).toList(), "%alarm%")
+        );
+        List<TopicTreeDTO> dto = generateParentTree(Mappers.getMapper(TopicTreeDTOMapper.class).sourcesToTargets(rootTopicTrees), devices);
+        devices.clear();
+
+        return dto;
     }
 
     private List<TopicTreeDTO> generateParentTree(List<TopicTreeDTO> dtos, List<DeviceView> deviceViews) {
