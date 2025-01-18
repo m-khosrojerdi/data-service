@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.Serializable;
 import java.sql.Date;
@@ -11,12 +12,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
+@Slf4j
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TopicTreeDTO implements Serializable {
+public class TopicTreeDTO implements Serializable, Cloneable {
 
     private Long id;
+    private Long code; // code property is original id property
     private String topic;
     private Long parentId;
     private Integer isProperty;
@@ -34,6 +37,13 @@ public class TopicTreeDTO implements Serializable {
         return children;
     }
 
+    public void setChildren(List<TopicTreeDTO> children) {
+        if (this.children == null) {
+            this.children = new ArrayList<>();
+        }
+        this.children.addAll(children);
+    }
+
     public void addChild(TopicTreeDTO child) {
         if (children == null) {
             children = new ArrayList<>();
@@ -41,9 +51,13 @@ public class TopicTreeDTO implements Serializable {
         children.add(child);
     }
 
-    /*@Override
-    public String toString() {
-        return "TreeNode{id=" + id + ", topic='" + topic + '\'' + ", children=" + children + '}';
-    }*/
-
+    @Override
+    public TopicTreeDTO clone() {
+        try {
+            return (TopicTreeDTO) super.clone();
+        } catch (CloneNotSupportedException e) {
+            log.error(e.getMessage(), e);
+            return null;
+        }
+    }
 }

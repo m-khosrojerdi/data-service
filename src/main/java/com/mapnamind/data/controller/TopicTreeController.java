@@ -47,9 +47,19 @@ public class TopicTreeController extends Base {
     public ResponseBody<List<TopicTreeView>> childrenTree(@PathVariable("parentId") Long parentId) {
         List<TopicTreeDTO> dto = service.findChildrenTreeFromParent(parentId);
         List<TopicTreeView> view = map(TopicTreeMapper.class).sourcesToTargets(dto);
-        return responseEntityTemplate.response("controller.topiTree.getTopicTree.success.200", view
-
-        );
+        return responseEntityTemplate.response("controller.topiTree.getTopicTree.success.200", view);
     }
+
+    @GetMapping("/search")
+    @PreAuthorize(AuthorizeType.ADMIN_CUSTOMER_MANUFACTURE_AGENCY)
+    @SecurityRequirements(value = {
+            @SecurityRequirement(name = ACCESS_TOKEN),
+            @SecurityRequirement(name = LANGUAGE)})
+    public ResponseBody<List<TopicTreeView>> search(@RequestParam String serialNumber, @RequestParam String description) {
+        List<TopicTreeDTO> dto = service.findBySerialOrDescription(serialNumber, description);
+        List<TopicTreeView> view = map(TopicTreeMapper.class).sourcesToTargets(dto);
+        return responseEntityTemplate.response("controller.topiTree.getTopicTree.success.200", view);
+    }
+
 
 }

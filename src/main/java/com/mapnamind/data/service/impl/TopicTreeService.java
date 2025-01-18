@@ -30,11 +30,6 @@ public class TopicTreeService implements ITopicTreeService {
     private final TopicTreeRepository repository;
     private final ApiService apiService;
 
-    public List<TopicTreeDTO> findChildrenTreeFromParent(Long parentId) {
-        List<TopicTree> entities = repository.findAllByParent(parentId);
-        return Mappers.getMapper(TopicTreeDTOMapper.class).sourcesToTargets(entities);
-    }
-
     @Override
     public List<TopicTreeDTO> findParentsTree() {
         List<DeviceView> devices = apiService.call(ServiceName.USER_GET_ALL_SERIAL_NUMBER_BY_ACCESS_LEVEL, null, SERIAL_NUMBERS_TYPE);
@@ -42,15 +37,16 @@ public class TopicTreeService implements ITopicTreeService {
         Set<String> deviceTypeNames = devices.stream()
                 .map(DeviceView::getDeviceTypeName)
                 .collect(Collectors.toSet());
-        List<TopicTree> topicTrees = repository.findAllByTopicAndParentIsNull(deviceTypeNames.stream().toList());
-        topicTrees.addAll(
+        List<TopicTree> rootTopicTrees = repository.findAllByTopicAndParentIsNull(deviceTypeNames.stream().toList());
+        rootTopicTrees.addAll(
+                //find all TopicTrees that have `data` value
                 repository.findAllByTopicIsDataAndParent(
-                        topicTrees.stream().map(TopicTree::getId).toList(), "%alarm%")
+                        rootTopicTrees.stream().map(TopicTree::getId).toList(), "%alarm%")
         );
 
         List<TopicTreeDTO> dto = new ArrayList<>();
         if (!devices.isEmpty()) {
-            dto = generateParentTree(Mappers.getMapper(TopicTreeDTOMapper.class).sourcesToTargets(topicTrees), devices);
+            dto = generateParentTree(Mappers.getMapper(TopicTreeDTOMapper.class).sourcesToTargets(rootTopicTrees), devices);
             if (!devices.isEmpty()) {
                 devices.clear();
             }
@@ -58,111 +54,86 @@ public class TopicTreeService implements ITopicTreeService {
         return dto;
     }
 
-    private List<TopicTreeDTO> generateParentTree(List<TopicTreeDTO> data, List<DeviceView> deviceViews) {
+    @Override
+    public List<TopicTreeDTO> findChildrenTreeFromParent(Long parentId) {
+        List<TopicTree> entities = repository.findAllByParent(parentId);
+        return Mappers.getMapper(TopicTreeDTOMapper.class).sourcesToTargets(entities)
+                .stream().peek(dto -> dto.setCode(dto.getId())).toList();
+    }
+
+    @Override
+    public List<TopicTreeDTO> findBySerialOrDescription(String serialNumber, String description) {
+        List<DeviceView> devices = apiService.call(ServiceName.USER_GET_ALL_SERIAL_NUMBER_BY_ACCESS_LEVEL, null, SERIAL_NUMBERS_TYPE);
+
+        return List.of();
+    }
+
+    private List<TopicTreeDTO> generateParentTree(List<TopicTreeDTO> dtos, List<DeviceView> deviceViews) {
         // Step 1: Create a map of ID to TreeNode (optimized to avoid parsing String -> Long multiple times)
-        Map<Long, TopicTreeDTO> nodeMap = data.stream()
+        Map<Long, TopicTreeDTO> nodes = dtos.stream()
                 .collect(Collectors.toMap(
-                        TopicTreeDTO::getId,
-                        row -> row
-                ));
+                                TopicTreeDTO::getId,
+                                row -> row
+                        )
+                );
+        dtos.clear();
 
-        List<TopicTreeDTO> root = new ArrayList<>();
-        for (TopicTreeDTO row : data) {
-            Long id = row.getId();
-            Long parentId = row.getParentId();
-
-            if (parentId == null) {
-                root.add(row); // Directly add to root if topic matches
-            } else {
-                // Link parent to child (handle null safety)
-                Optional.ofNullable(nodeMap.get(parentId))
-                        .ifPresent(parentNode -> parentNode.addChild(row));
-            }
-        }
-        data.clear();
-
-        // Step 4: Handle serial number and device-view specific logic
-        List<TopicTreeDTO> serialParentNode = nodeMap.values().stream()
+        List<TopicTreeDTO> topicTreesThatAreData = nodes.values().stream()
                 .filter(node -> "data".equals(node.getTopic()))
                 .toList();
 
-        long startingSerialId = nodeMap.keySet().stream()
+        long countId = nodes.keySet().stream()
                 .max(Long::compareTo)
                 .orElse(1000L) + 1;
 
-        for (DeviceView deviceView : deviceViews) {
-            Long id = startingSerialId++;
+        for (DeviceView device : deviceViews) {
+            Long id = countId++;
+            Long cloneId = countId++;
+
+            // Initialize serial TopicTree node
             TopicTreeDTO serialNode = TopicTreeDTO.builder()
                     .id(id)
-                    .topic(deviceView.getSerialNumber())
+                    .topic(device.getSerialNumber())
                     .isProperty(0)
                     .build();
 
             // Find the corresponding data node using a more efficient method
-            Optional<TopicTreeDTO> dataNodeOpt = serialParentNode.stream()
-                    .filter(node -> node.getPath().contains(deviceView.getDeviceTypeName() + "/"))
+            Optional<TopicTreeDTO> foundDataNode = topicTreesThatAreData.stream()
+                    .filter(node -> node.getPath().contains(device.getDeviceTypeName() + "/") ||
+                            node.getPath().contains(device.getHubDeviceTypeName() + "/"))
                     .findFirst();
 
-            dataNodeOpt.ifPresent(dataNode -> {
-                dataNode.setParentId(id);  // Attach parent ID to data node
+            foundDataNode.ifPresent(dataNode -> {
+                TopicTreeDTO cloneDataNode = dataNode.clone();
+                Long rootId = cloneDataNode.getParentId();
+
+                cloneDataNode.setCode(cloneDataNode.getId());
+                cloneDataNode.setId(cloneId);
+                cloneDataNode.setParentId(id);
 
                 // Attach the serial node as a child to the data node
-                serialNode.addChild(dataNode);
+                serialNode.setParentId(rootId);
 
-                // Update root nodes to reflect new serial node in place of old data node
-                root.forEach(rootNode -> rootNode.setChildren(
-                        rootNode.getChildren().stream()
-                                .map(child -> {
-                                    if (child.getId().equals(dataNode.getId())) {
-                                        // Set the parentId of the serialNode to rootNode's ID
-                                        serialNode.setParentId(rootNode.getId());
-                                        return serialNode; // Replace the dataNode with serialNode
-                                    }
-                                    return child;
-                                })
-                                .collect(Collectors.toList())
-                ));
+                nodes.put(cloneDataNode.getId(), cloneDataNode);
+                nodes.put(serialNode.getId(), serialNode);
             });
         }
+        topicTreesThatAreData.forEach(node -> nodes.remove(node.getId()));
 
-        return root;
-    }
-
-    private List<TopicTree> findChildrenFromParent(Long parentId) {
-        try {
-            List<TopicTree> children = repository.findAllByParent(parentId);
-            if (!children.isEmpty()) {
-                for (TopicTree topicTree : children) {
-                    List<TopicTree> topicTrees = findChildrenFromParent(topicTree.getId());
-                    if (!topicTrees.isEmpty()) {
-                        children.addAll(topicTrees);
-                    }
-                    topicTrees.clear();
-                }
-            }
-            return children;
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            return null;
-        }
-    }
-
-    private List<TopicTreeDTO> generateChildrenTree(List<TopicTreeDTO> data) {
-        Map<Long, TopicTreeDTO> nodeMap = data.stream()
-                .collect(Collectors.toMap(
-                        TopicTreeDTO::getId,
-                        row -> row
-                ));
-
-        List<TopicTreeDTO> root = new ArrayList<>();
-        for (TopicTreeDTO row : data) {
+        List<TopicTreeDTO> topicTrees = new ArrayList<>();
+        for (TopicTreeDTO row : nodes.values()) {
             Long parentId = row.getParentId();
-            // Link parent to child (handle null safety)
-            Optional.ofNullable(nodeMap.get(parentId))
-                    .ifPresent(parentNode -> parentNode.addChild(row));
+
+            if (parentId == null) {
+                topicTrees.add(row); // Directly add to root if topic matches
+            } else {
+                // Link parent to child (handle null safety)
+                Optional.ofNullable(nodes.get(parentId))
+                        .ifPresent(parentNode -> parentNode.addChild(row));
+            }
         }
-        data.clear();
-        return root;
+
+        return topicTrees;
     }
 
 }
