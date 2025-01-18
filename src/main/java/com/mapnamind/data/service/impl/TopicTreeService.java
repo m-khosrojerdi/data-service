@@ -84,7 +84,10 @@ public class TopicTreeService implements ITopicTreeService {
 
     private List<TopicTreeDTO> findTopicTrees(List<DeviceView> devices) {
         Set<String> deviceTypeNames = devices.stream()
-                .map(DeviceView::getDeviceTypeName)
+                .map(device -> device.getHubDeviceTypeName() != null ?
+                        device.getHubDeviceTypeName() :
+                        device.getDeviceTypeName()
+                )
                 .collect(Collectors.toSet());
         List<TopicTree> rootTopicTrees = repository.findAllByTopicAndParentIsNull(deviceTypeNames.stream().toList());
         rootTopicTrees.addAll(
@@ -92,10 +95,7 @@ public class TopicTreeService implements ITopicTreeService {
                 repository.findAllByTopicIsDataAndParent(
                         rootTopicTrees.stream().map(TopicTree::getId).toList(), "%alarm%")
         );
-        List<TopicTreeDTO> dto = generateParentTree(Mappers.getMapper(TopicTreeDTOMapper.class).sourcesToTargets(rootTopicTrees), devices);
-        devices.clear();
-
-        return dto;
+        return generateParentTree(Mappers.getMapper(TopicTreeDTOMapper.class).sourcesToTargets(rootTopicTrees), devices);
     }
 
     private List<TopicTreeDTO> generateParentTree(List<TopicTreeDTO> dtos, List<DeviceView> deviceViews) {
