@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -40,7 +41,14 @@ public class DataController extends Base {
             @SecurityRequirement(name = LANGUAGE)})
     public ResponseBody<?> signalSelector(@Valid @RequestBody SignalSelectorView view) {
 
-        for (SignalView signal : view.getSignals()) {
+        List<SignalView> signalViews = Arrays.stream(view.getStringSignals().split(",")).map(s -> {
+            SignalView signalView = new SignalView();
+            signalView.setTopic(s.split(":")[0]);
+            signalView.setIsProperty(s.split(":")[1]);
+            return signalView;
+        }).toList();
+
+        for (SignalView signal : signalViews) {
             if (signal.getIsProperty().equals("0")) {
                 signal.setIsProperty(null);
             } else if (signal.getIsProperty().equals("1")) {

@@ -17,6 +17,8 @@ import java.util.List;
 @NoArgsConstructor
 public class SignalSelectorView implements Serializable {
 
+    private String stringSignals;
+
     @NotEmpty
     private List<SignalView> signals;
 
