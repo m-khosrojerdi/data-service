@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -40,13 +41,17 @@ public class DataController extends Base {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
     public ResponseBody<?> signalSelector(@Valid @RequestBody SignalSelectorView view) {
-
-        List<SignalView> signalViews = Arrays.stream(view.getStringSignals().split(",")).map(s -> {
-            SignalView signalView = new SignalView();
-            signalView.setTopic(s.split(":")[0]);
-            signalView.setIsProperty(s.split(":")[1]);
-            return signalView;
-        }).toList();
+        List<SignalView> signalViews;
+        if (view.getSignals() != null && !view.getStringSignals().isEmpty()) {
+            signalViews = Arrays.stream(view.getStringSignals().split(",")).map(s -> {
+                SignalView signalView = new SignalView();
+                signalView.setTopic(s.split(":")[0]);
+                signalView.setIsProperty(s.split(":")[1]);
+                return signalView;
+            }).toList();
+        } else {
+            signalViews = view.getSignals();
+        }
 
         for (SignalView signal : signalViews) {
             if (signal.getIsProperty().equals("0")) {
@@ -65,8 +70,7 @@ public class DataController extends Base {
             if (dataList != null && !dataList.isEmpty()) {
                 List<DataValue> dataValues = dataList.stream().map(data -> map(DataMapper.class).sourceToTarget(data)).toList();
                 view.addValue(ValueView.builder().name(signal.getTopic()).data(dataValues).build());
-            }
-            else {
+            } else {
                 view.addValue(ValueView.builder().name(signal.getTopic()).data(List.of()).build());
             }
         }
