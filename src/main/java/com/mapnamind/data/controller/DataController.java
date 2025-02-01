@@ -42,7 +42,7 @@ public class DataController extends Base {
             @SecurityRequirement(name = LANGUAGE)})
     public ResponseBody<?> signalSelector(@Valid @RequestBody SignalSelectorView view) {
         List<SignalView> signalViews;
-        if (view.getSignals() != null && !view.getStringSignals().isEmpty()) {
+        if (view.getStringSignals() != null && view.getSignals() == null) {
             signalViews = Arrays.stream(view.getStringSignals().split(",")).map(s -> {
                 SignalView signalView = new SignalView();
                 signalView.setTopic(s.split(":")[0]);
