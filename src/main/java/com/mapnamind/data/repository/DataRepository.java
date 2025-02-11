@@ -41,7 +41,7 @@ public interface DataRepository extends JpaRepository<Data, Long> {
             "    )\n" +
             "select datetime,\n" +
             "       value,\n" +
-            "       coalesce(value - lag(value) over (order by datetime), 0) as value_changes\n" +
+            "       coalesce(value - lag(value) over (order by datetime), 0) as valueChanges\n" +
             "from sampled_data\n" +
             "order by datetime", nativeQuery = true)
     List<DataProjection> findAllByTopicAndLogTime(@Param("TOPIC") String topic, @Param("START_DATE") String startDate,
