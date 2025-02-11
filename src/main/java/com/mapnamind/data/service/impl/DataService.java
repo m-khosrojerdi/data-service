@@ -18,12 +18,12 @@ public class DataService implements IDataService {
 
     private final DataRepository dataRepository;
 
-    public List<DataProjectionDTO> findAllByTopicAndLogTime(String topic, String startDate, String endDate, String isProperty) {
+    public List<DataProjectionDTO> findAllByTopicAndLogTime(String topic, String startDate, String endDate, String isProperty, Integer sampleCount) {
         try {
-            List<DataProjection> data = dataRepository.findAllByTopicAndLogTime(topic, startDate, endDate, isProperty);
+            List<DataProjection> data = dataRepository.findAllByTopicAndLogTime(topic, startDate, endDate, isProperty, sampleCount);
             if (data != null && !data.isEmpty()) {
                 return data.stream().map(item -> DataProjectionDTO.builder()
-                        .value(item.getValue()).dateTime(item.getDateTime()).build()).toList();
+                        .valueChanges(item.getValueChanges()).value(item.getValue()).dateTime(item.getDateTime()).build()).toList();
             }
             return List.of();
         } catch (Exception e) {

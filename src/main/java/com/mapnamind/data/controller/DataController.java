@@ -65,7 +65,7 @@ public class DataController extends Base {
                 }
             }
             List<DataProjectionDTO> dataList = dataService.findAllByTopicAndLogTime(signal.getTopic(), view.getStartDate(),
-                    view.getEndDate(), signal.getIsProperty());
+                    view.getEndDate(), signal.getIsProperty(), signal.getSampleCount());
 
             if (dataList != null && !dataList.isEmpty()) {
                 List<DataValue> dataValues = dataList.stream().map(data -> map(DataMapper.class).sourceToTarget(data)).toList();

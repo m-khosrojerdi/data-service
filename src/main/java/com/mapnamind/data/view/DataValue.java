@@ -12,6 +12,7 @@ import java.io.Serializable;
 public class DataValue implements Serializable {
 
     private String x;
-    private String y;
+    private Double y;
+    private Double c;
 
 }
