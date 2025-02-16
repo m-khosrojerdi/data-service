@@ -74,14 +74,14 @@ sshKey() {
 build() {
   # Function for building the Java project using Maven
   log "Building the project..."
-  mvn -amd clean package -Pprod -DskipTests=true || handle_error "Maven build failed."
+  mvn -amd clean package -Pdev -DskipTests=true || handle_error "Maven build failed."
 }
 
 # Run
 run() {
   # Function for running the application in the local system
   log "Running the project in local system..."
-  java -jar "$SOURCE_JAR_FILE"
+  java -jar "$SOURCE_JAR_FILE" --spring.profiles.active=dev
   log "Running completed."
 }
 
