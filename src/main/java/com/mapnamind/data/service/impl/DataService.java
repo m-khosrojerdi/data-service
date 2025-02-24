@@ -2,7 +2,6 @@ package com.mapnamind.data.service.impl;
 
 import com.mapnamind.common.execption.ServiceException;
 import com.mapnamind.common.model.view.DataProjection;
-import com.mapnamind.common.util.ExcelUtil;
 import com.mapnamind.data.dto.DataProjectionDTO;
 import com.mapnamind.data.dto.SignalDTO;
 import com.mapnamind.data.repository.DataRepository;
@@ -41,10 +40,10 @@ public class DataService implements IDataService {
 
     @Override
     public void export(String startDate, String endDate, SignalDTO signalDTO) {
-        resolveProperty(signalDTO);
+        /*resolveProperty(signalDTO);
         List<DataProjection> data = dataRepository.findAllByTopicAndLogTime(
                 signalDTO.getTopic(), startDate, endDate, signalDTO.getIsProperty(), null);
-        ExcelUtil.toBytes(ExcelUtil.createWorkbook(data, ""));
+        ExcelUtil.toBytes(ExcelUtil.createWorkbook(data, ""));*/
     }
 
     private void resolveProperty(SignalDTO signalDTO) {
