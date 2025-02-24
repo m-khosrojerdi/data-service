@@ -1,11 +1,12 @@
 package com.mapnamind.data.service;
 
-import com.mapnamind.common.model.view.DataProjection;
 import com.mapnamind.data.dto.DataProjectionDTO;
+import com.mapnamind.data.dto.SignalDTO;
 
 import java.util.List;
 
 public interface IDataService {
 
-    List<DataProjectionDTO> findAllByTopicAndLogTime(String topic, String startDate, String endDate, String isProperty, Integer sampleCount);
+    List<DataProjectionDTO> findAllByTopicAndLogTime(String startDate, String endDate, SignalDTO signalDTO);
+    void export(String startDate, String endDate, SignalDTO signalDTO);
 }

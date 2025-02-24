@@ -21,6 +21,6 @@ public class SignalView implements Serializable {
     @Pattern(regexp = "0|1", message = "view.data.property.notValidIsProperty")
     private String isProperty;
 
+    private String interval;
     private Integer sampleCount;
-
 }

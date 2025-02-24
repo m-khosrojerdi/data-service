@@ -48,4 +48,15 @@ public interface DataRepository extends JpaRepository<Data, Long> {
                                                   @Param("END_DATE") String endDate, @Param("PROPERTY") String Property,
                                                   @Param("SAMPLE_COUNT") Integer sampleCount);
 
+    @Query(value = "select dateandtime as datetime, aggr_value as value\n" +
+            "from cmn.fnc_get_aggr_data(:TOPIC,\n" +
+            "                           cast(:START_DATE as timestamp),\n" +
+            "                           cast(:END_DATE as timestamp),\n" +
+            "                           'delta',\n" +
+            "                           :INTERVAL,\n" +
+            "                           :PROPERTY)", nativeQuery = true)
+    List<DataProjection> delta(@Param("TOPIC") String topic, @Param("START_DATE") String startDate,
+                               @Param("END_DATE") String endDate, @Param("PROPERTY") String Property,
+                               @Param("INTERVAL") String interval);
+
 }

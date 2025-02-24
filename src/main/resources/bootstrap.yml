@@ -3,5 +3,20 @@ spring:
     name: data-service
   cloud:
     config:
-      uri: http://config.mapnamind.com
       name: ${spring.application.name}, common-config, datasource, service
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  cloud:
+    config:
+      uri: http://testconfig.mapnamind.com
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  cloud:
+    config:
+      uri: http://config.mapnamind.com
