@@ -21,6 +21,7 @@ public class TopicTreeDTO implements Serializable, Cloneable {
     private Long id;
     private Long code; // code property is original id property
     private String topic;
+    private String deviceName;
     private Long parentId;
     private Integer isProperty;
     private Integer level;

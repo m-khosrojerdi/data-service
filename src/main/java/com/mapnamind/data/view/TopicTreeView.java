@@ -15,6 +15,7 @@ public class TopicTreeView implements Serializable {
     private Long id;
     private Long code;
     private String topic;
+    private String deviceName;
     private Long parentId;
     private Integer isProperty;
     private String description;

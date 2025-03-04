@@ -1,6 +1,8 @@
 package com.mapnamind.data.service.impl;
 
 import com.google.gson.reflect.TypeToken;
+import com.mapnamind.common.dto.device.DeviceDTO;
+import com.mapnamind.common.dto.userAsset.UserAssetDTO;
 import com.mapnamind.common.execption.ServiceException;
 import com.mapnamind.common.model.entity.TopicTree;
 import com.mapnamind.common.view.device.DeviceView;
@@ -20,6 +22,8 @@ import java.lang.reflect.Type;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.mapnamind.common.util.Constant.SLASH;
+
 @Slf4j
 @Service
 @Transactional
@@ -28,16 +32,18 @@ public class TopicTreeService implements ITopicTreeService {
 
     private static final Type SERIAL_NUMBERS_TYPE = new TypeToken<List<DeviceView>>() {
     }.getType();
+    private static final Type USER_ASSET_DTOs = new TypeToken<List<UserAssetDTO>>() {
+    }.getType();
     private final TopicTreeRepository repository;
     private final ApiService apiService;
 
     @Override
     public List<TopicTreeDTO> findParentsTree() {
-        List<DeviceView> devices = apiService.call(ServiceName.USER_GET_ALL_SERIAL_NUMBER_BY_ACCESS_LEVEL, null, SERIAL_NUMBERS_TYPE);
+        List<DeviceView> devices = apiService.callCollection(ServiceName.USER_GET_ALL_SERIAL_NUMBER_BY_ACCESS_LEVEL, null, SERIAL_NUMBERS_TYPE);
         if (devices.isEmpty()) {
             throw new ServiceException("service.topicTree.common.emptyDevices.9004");
         }
-        return findTopicTrees(devices);
+        return findTopicTrees(devices, getDevicesName(devices.stream().map(DeviceView::getId).toList(), null));
     }
 
     @Override
@@ -48,23 +54,34 @@ public class TopicTreeService implements ITopicTreeService {
     }
 
     @Override
-    public List<TopicTreeDTO> findBySerialOrDescription(String serialNumber, String description) {
-        List<DeviceView> devices = apiService.call(ServiceName.USER_GET_ALL_SERIAL_NUMBER_BY_ACCESS_LEVEL, null, SERIAL_NUMBERS_TYPE);
+    public List<TopicTreeDTO> findBySerialOrDescription(String deviceName, String serialNumber, String description) {
+        List<DeviceView> devices = apiService.call(ServiceName.USER_GET_ALL_SERIAL_NUMBER_BY_ACCESS_LEVEL,
+                null, SERIAL_NUMBERS_TYPE);
         if (devices == null || devices.isEmpty()) {
             throw new ServiceException("service.topicTree.common.emptyDevices.9004");
         }
-        if (serialNumber != null) {
-            Optional<DeviceView> device = devices.stream().filter(d -> d.getSerialNumber().equals(serialNumber)).findFirst();
-            if (device.isEmpty()) {
+        if (serialNumber != null && !serialNumber.isEmpty()) {
+            List<DeviceView> searchDevices = devices.stream().filter(device ->
+                    device.getSerialNumber().contains(serialNumber)
+            ).toList();
+            if (searchDevices.isEmpty()) {
                 throw new ServiceException("service.topicTree.findBySerialOrDescription.serialNumberNotExists.9005");
             }
-            return findTopicTrees(Collections.singletonList(device.get()));
+            return findTopicTrees(devices, getDevicesName(devices.stream().map(DeviceView::getId).toList(), null));
 
-        } else if (description != null) {
-            TopicTree entity = repository.findByDescription(description);
-            List<TopicTree> rootTopicTrees = Collections.singletonList(entity);
-            findAllParentsOfThisTopic(entity.getParent(), rootTopicTrees);
-            List<TopicTreeDTO> dto = generateParentTree(Mappers.getMapper(TopicTreeDTOMapper.class).sourcesToTargets(rootTopicTrees), devices);
+        } else if (deviceName != null && !deviceName.isEmpty()) {
+            return findTopicTrees(devices, getDevicesName(devices.stream().map(DeviceView::getId).toList(), deviceName));
+        } else if (description != null && !description.isEmpty()) {
+            List<TopicTree> entities = repository.findByDescription(description);
+            List<TopicTree> finalTopicTrees = new ArrayList<>();
+            for (TopicTree entity : entities) {
+                finalTopicTrees.add(entity);
+                findAllParentsOfThisTopic(entity.getParent(), entities);
+            }
+            List<TopicTreeDTO> dto = generateParentTree(
+                    Mappers.getMapper(TopicTreeDTOMapper.class).sourcesToTargets(finalTopicTrees), devices,
+                    getDevicesName(devices.stream().map(DeviceView::getId).toList(), null)
+            );
             devices.clear();
             return dto;
         }
@@ -82,7 +99,7 @@ public class TopicTreeService implements ITopicTreeService {
         }
     }
 
-    private List<TopicTreeDTO> findTopicTrees(List<DeviceView> devices) {
+    private List<TopicTreeDTO> findTopicTrees(List<DeviceView> devices, Map<String, String> nameDevices) {
         Set<String> deviceTypeNames = devices.stream()
                 .map(device -> device.getHubDeviceTypeName() != null ?
                         device.getHubDeviceTypeName() :
@@ -95,10 +112,10 @@ public class TopicTreeService implements ITopicTreeService {
                 repository.findAllByTopicIsDataAndParent(
                         rootTopicTrees.stream().map(TopicTree::getId).toList(), "%alarm%")
         );
-        return generateParentTree(Mappers.getMapper(TopicTreeDTOMapper.class).sourcesToTargets(rootTopicTrees), devices);
+        return generateParentTree(Mappers.getMapper(TopicTreeDTOMapper.class).sourcesToTargets(rootTopicTrees), devices, nameDevices);
     }
 
-    private List<TopicTreeDTO> generateParentTree(List<TopicTreeDTO> dtos, List<DeviceView> deviceViews) {
+    private List<TopicTreeDTO> generateParentTree(List<TopicTreeDTO> dtos, List<DeviceView> deviceViews, Map<String, String> nameDevices) {
         // Step 1: Create a map of ID to TreeNode (optimized to avoid parsing String -> Long multiple times)
         Map<Long, TopicTreeDTO> nodes = dtos.stream()
                 .collect(Collectors.toMap(
@@ -124,13 +141,14 @@ public class TopicTreeService implements ITopicTreeService {
             TopicTreeDTO serialNode = TopicTreeDTO.builder()
                     .id(id)
                     .topic(device.getSerialNumber())
+                    .deviceName(nameDevices.get(device.getSerialNumber()))
                     .isProperty(0)
                     .build();
 
             // Find the corresponding data node using a more efficient method
             Optional<TopicTreeDTO> foundDataNode = topicTreesThatAreData.stream()
-                    .filter(node -> node.getPath().contains(device.getDeviceTypeName() + "/") ||
-                            node.getPath().contains(device.getHubDeviceTypeName() + "/"))
+                    .filter(node -> node.getPath().contains(device.getDeviceTypeName() + SLASH) ||
+                            node.getPath().contains(device.getHubDeviceTypeName() + SLASH))
                     .findFirst();
 
             foundDataNode.ifPresent(dataNode -> {
@@ -164,6 +182,17 @@ public class TopicTreeService implements ITopicTreeService {
         }
 
         return topicTrees;
+    }
+
+    private Map<String, String> getDevicesName(List<Long> deviceIds, String deviceName) {
+        List<UserAssetDTO> userAssetDTOS = apiService.callCollection(ServiceName.USER_DEVICE_FIND_ALL_BY_USER_AND_DEVICE_IDS,
+                DeviceDTO.builder().ids(deviceIds).build(), USER_ASSET_DTOs
+        );
+        return deviceName != null ? userAssetDTOS.stream()
+                .filter(dto -> dto.getNickName().contains(deviceName))
+                .collect(Collectors.toMap(UserAssetDTO::getSerialNumber, UserAssetDTO::getNickName))
+                :
+                userAssetDTOS.stream().collect(Collectors.toMap(UserAssetDTO::getSerialNumber, UserAssetDTO::getNickName));
     }
 
 }

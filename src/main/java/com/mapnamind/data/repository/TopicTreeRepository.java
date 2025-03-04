@@ -24,6 +24,7 @@ public interface TopicTreeRepository extends JpaRepository<TopicTree, Long> {
 
     List<TopicTree> findAllByParentIsNotNull();
 
-    TopicTree findByDescription(String description);
+    @Query("SELECT T FROM TopicTree T WHERE T.description LIKE %:DESCRIPTION%")
+    List<TopicTree> findByDescription(@Param("DESCRIPTION") String description);
 
 }
