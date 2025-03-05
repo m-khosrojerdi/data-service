@@ -10,11 +10,14 @@ import com.mapnamind.web.Base;
 import com.mapnamind.web.enumeration.AuthorizeType;
 import com.mapnamind.web.view.ResponseBody;
 import com.mapnamind.web.view.ResponseEntityTemplate;
-import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,7 +37,7 @@ public class DataController extends Base {
     private final DataService dataService;
     private final ResponseEntityTemplate responseEntityTemplate;
 
-    @PostMapping("/signalSelector")
+    @PostMapping("/signal-selector")
     @PreAuthorize(AuthorizeType.CUSTOMER)
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
@@ -63,13 +66,20 @@ public class DataController extends Base {
         return responseEntityTemplate.response("controller.data.signalSelector.successful.200", view);
     }
 
-    @Hidden
-    @PostMapping("/signalSelector/export")
+    @PostMapping("/signal-selector/export")
     @PreAuthorize(AuthorizeType.CUSTOMER)
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
-    public ResponseBody<?> signalSelectorExport(@Valid @RequestBody SignalSelectorView view) {
-        return null;
+    public ResponseEntity<?> signalSelectorExport(@Valid @RequestBody SignalSelectorView view) {
+
+        byte[] bytes = dataService.export(
+                view.getStartDate(), view.getEndDate(),
+                map(SignalMapper.class).targetsToSources(view.getSignals()));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.setContentDispositionFormData("attachment", "data.zip");
+        return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
     }
 }

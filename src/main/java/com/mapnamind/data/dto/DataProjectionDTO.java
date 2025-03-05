@@ -12,7 +12,7 @@ import java.sql.Timestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DataProjectionDTO {
-    Double value;
-    Double valueChanges;
-    Timestamp dateTime;
+    private Double value;
+    private Double valueChanges;
+    private Timestamp dateTime;
 }

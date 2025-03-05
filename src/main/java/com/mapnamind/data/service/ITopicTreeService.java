@@ -12,4 +12,5 @@ public interface ITopicTreeService {
 
     List<TopicTreeDTO> findBySerialOrDescription(String deviceName, String serialNumber, String description);
 
+    TopicTreeDTO findByPath(String path);
 }

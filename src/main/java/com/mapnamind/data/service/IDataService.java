@@ -8,5 +8,5 @@ import java.util.List;
 public interface IDataService {
 
     List<DataProjectionDTO> findAllByTopicAndLogTime(String startDate, String endDate, SignalDTO signalDTO);
-    void export(String startDate, String endDate, SignalDTO signalDTO);
+    byte[] export(String startDate, String endDate, List<SignalDTO> signalDTOs);
 }

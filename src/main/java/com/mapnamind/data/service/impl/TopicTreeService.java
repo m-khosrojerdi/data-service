@@ -195,4 +195,9 @@ public class TopicTreeService implements ITopicTreeService {
                 userAssetDTOS.stream().collect(Collectors.toMap(UserAssetDTO::getSerialNumber, UserAssetDTO::getNickName));
     }
 
+    @Override
+    public TopicTreeDTO findByPath(String path) {
+        return Mappers.getMapper(TopicTreeDTOMapper.class).sourceToTarget(
+                repository.findByPath(path).orElseThrow(() -> new ServiceException("service.topicTree.notFound.9010")));
+    }
 }

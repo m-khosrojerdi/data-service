@@ -1,19 +1,27 @@
 package com.mapnamind.data.service.impl;
 
 import com.mapnamind.common.execption.ServiceException;
-import com.mapnamind.common.model.view.DataProjection;
+import com.mapnamind.common.util.ExcelUtil;
+import com.mapnamind.common.util.ZipUtil;
 import com.mapnamind.data.dto.DataProjectionDTO;
 import com.mapnamind.data.dto.SignalDTO;
 import com.mapnamind.data.repository.DataRepository;
 import com.mapnamind.data.service.IDataService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import static com.mapnamind.common.util.Constant.DASH;
+import static com.mapnamind.common.util.Constant.SLASH;
 
 @Slf4j
 @Service
@@ -21,6 +29,7 @@ import java.util.regex.Pattern;
 public class DataService implements IDataService {
 
     private final DataRepository dataRepository;
+    private final TopicTreeService topicTreeService;
 
     public List<DataProjectionDTO> findAllByTopicAndLogTime(String startDate, String endDate, SignalDTO signalDTO) {
         try {
@@ -39,11 +48,22 @@ public class DataService implements IDataService {
     }
 
     @Override
-    public void export(String startDate, String endDate, SignalDTO signalDTO) {
-        /*resolveProperty(signalDTO);
-        List<DataProjection> data = dataRepository.findAllByTopicAndLogTime(
-                signalDTO.getTopic(), startDate, endDate, signalDTO.getIsProperty(), null);
-        ExcelUtil.toBytes(ExcelUtil.createWorkbook(data, ""));*/
+    public byte[] export(String startDate, String endDate, List<SignalDTO> signalDTOs) {
+        Workbook workbook = new XSSFWorkbook();
+        for (SignalDTO signalDTO : signalDTOs) {
+            resolveProperty(signalDTO);
+            List<DataProjectionDTO> data = dataRepository.findAllByTopicAndLogTime(
+                            signalDTO.getTopic(), startDate, endDate, signalDTO.getIsProperty(), null)
+                    .stream().map(dataProjection -> DataProjectionDTO.builder()
+                            .dateTime(dataProjection.getDateTime())
+                            .value(dataProjection.getValue())
+                            .valueChanges(dataProjection.getValueChanges()).build()).toList();
+            String topicParts[] = signalDTO.getTopic().split(SLASH);
+            String sheetName = topicParts[1] + DASH + topicTreeService.findByPath(topicParts[0] + SLASH +
+                    Arrays.stream(topicParts).skip(2).collect(Collectors.joining(SLASH))).getTopic();
+            ExcelUtil.createSheet(workbook, List.of("dateTime", "value"), data, sheetName);
+        }
+        return ZipUtil.toZip(ExcelUtil.toBytes(workbook), "data.xlsx");
     }
 
     private void resolveProperty(SignalDTO signalDTO) {

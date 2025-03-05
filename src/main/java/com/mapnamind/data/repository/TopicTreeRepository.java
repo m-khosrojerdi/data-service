@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TopicTreeRepository extends JpaRepository<TopicTree, Long> {
@@ -27,4 +28,5 @@ public interface TopicTreeRepository extends JpaRepository<TopicTree, Long> {
     @Query("SELECT T FROM TopicTree T WHERE T.description LIKE %:DESCRIPTION%")
     List<TopicTree> findByDescription(@Param("DESCRIPTION") String description);
 
+    Optional<TopicTree> findByPath(String path);
 }
