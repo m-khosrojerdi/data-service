@@ -73,7 +73,7 @@ public class TopicTreeController extends Base {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
     public ResponseBody<DateView> date() {
-        return responseEntityTemplate.response("controller.topiTree.getTopicTree.success.200",
+        return responseEntityTemplate.response("common.200",
                 DateView.builder()
                         .date(Toolbox.convertDateToString(Constant.UI_DATE_FORMATTING_New, new Date()))
                         .build()
