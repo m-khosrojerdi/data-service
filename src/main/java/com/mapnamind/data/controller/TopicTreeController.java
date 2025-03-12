@@ -1,8 +1,11 @@
 package com.mapnamind.data.controller;
 
+import com.mapnamind.common.util.Constant;
+import com.mapnamind.common.util.Toolbox;
 import com.mapnamind.data.dto.TopicTreeDTO;
 import com.mapnamind.data.mapper.TopicTreeMapper;
 import com.mapnamind.data.service.ITopicTreeService;
+import com.mapnamind.data.view.DateView;
 import com.mapnamind.data.view.TopicTreeView;
 import com.mapnamind.web.Base;
 import com.mapnamind.web.enumeration.AuthorizeType;
@@ -14,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Date;
 import java.util.List;
 
 import static com.mapnamind.web.enumeration.Swagger.ACCESS_TOKEN;
@@ -63,5 +67,17 @@ public class TopicTreeController extends Base {
         return responseEntityTemplate.response("controller.topiTree.getTopicTree.success.200", view);
     }
 
+    @GetMapping("/date")
+    @PreAuthorize(AuthorizeType.ADMIN_CUSTOMER_MANUFACTURE_AGENCY)
+    @SecurityRequirements(value = {
+            @SecurityRequirement(name = ACCESS_TOKEN),
+            @SecurityRequirement(name = LANGUAGE)})
+    public ResponseBody<DateView> date() {
+        return responseEntityTemplate.response("controller.topiTree.getTopicTree.success.200",
+                DateView.builder()
+                        .date(Toolbox.convertDateToString(Constant.UI_DATE_FORMATTING_New, new Date()))
+                        .build()
+        );
+    }
 
 }
