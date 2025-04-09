@@ -67,7 +67,7 @@ public class TopicTreeService implements ITopicTreeService {
             if (searchDevices.isEmpty()) {
                 throw new ServiceException("service.topicTree.findBySerialOrDescription.serialNumberNotExists.9005");
             }
-            return findTopicTrees(devices, getDevicesName(devices.stream().map(DeviceView::getId).toList(), null));
+            return findTopicTrees(searchDevices, getDevicesName(devices.stream().map(DeviceView::getId).toList(), null));
 
         } else if (deviceName != null && !deviceName.isEmpty()) {
             return findTopicTrees(devices, getDevicesName(devices.stream().map(DeviceView::getId).toList(), deviceName));
