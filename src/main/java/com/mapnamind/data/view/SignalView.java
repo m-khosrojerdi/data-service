@@ -22,5 +22,6 @@ public class SignalView implements Serializable {
     private String isProperty;
 
     private String interval;
+    private String aggregation;
     private Integer sampleCount;
 }
