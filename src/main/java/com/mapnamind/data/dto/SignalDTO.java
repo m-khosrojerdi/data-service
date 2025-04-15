@@ -14,5 +14,6 @@ public class SignalDTO implements Serializable {
     private String topic;
     private String isProperty;
     private String interval;
+    private String aggregation;
     private Integer sampleCount;
 }

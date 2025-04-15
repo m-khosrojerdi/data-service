@@ -36,7 +36,7 @@ public class DataService implements IDataService {
             resolveProperty(signalDTO);
             return (Objects.isNull(signalDTO.getInterval()) ?
                     dataRepository.findAllByTopicAndLogTime(signalDTO.getTopic(), startDate, endDate, signalDTO.getIsProperty(), signalDTO.getSampleCount()) :
-                    dataRepository.delta(signalDTO.getTopic(), startDate, endDate, signalDTO.getIsProperty(), signalDTO.getInterval()))
+                    dataRepository.delta(signalDTO.getTopic(), startDate, endDate, signalDTO.getIsProperty(), signalDTO.getInterval(), signalDTO.getAggregation()))
                     .stream().map(dataProjection -> DataProjectionDTO.builder()
                             .dateTime(dataProjection.getDateTime())
                             .value(dataProjection.getValue())
