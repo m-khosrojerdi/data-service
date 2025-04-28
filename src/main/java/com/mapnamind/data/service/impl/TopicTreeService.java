@@ -70,7 +70,12 @@ public class TopicTreeService implements ITopicTreeService {
             return findTopicTrees(searchDevices, getDevicesName(devices.stream().map(DeviceView::getId).toList(), null));
 
         } else if (deviceName != null && !deviceName.isEmpty()) {
-            return findTopicTrees(devices, getDevicesName(devices.stream().map(DeviceView::getId).toList(), deviceName));
+            Map<String, String> getAllDeviceNames = getDevicesName(devices.stream().map(DeviceView::getId).toList(), deviceName);
+            List<DeviceView> searchDevices = devices.stream().filter(device ->
+                    getAllDeviceNames.containsKey(device.getSerialNumber())
+            ).toList();
+
+            return findTopicTrees(searchDevices, getDevicesName(devices.stream().map(DeviceView::getId).toList(), deviceName));
         } else if (description != null && !description.isEmpty()) {
             List<TopicTree> entities = repository.findByDescription(description);
             List<TopicTree> finalTopicTrees = new ArrayList<>();
