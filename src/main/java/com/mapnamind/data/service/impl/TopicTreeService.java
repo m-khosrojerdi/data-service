@@ -5,6 +5,7 @@ import com.mapnamind.common.dto.device.DeviceDTO;
 import com.mapnamind.common.dto.userAsset.UserAssetDTO;
 import com.mapnamind.common.execption.ServiceException;
 import com.mapnamind.common.model.entity.TopicTree;
+import com.mapnamind.common.util.Constant;
 import com.mapnamind.common.view.device.DeviceView;
 import com.mapnamind.data.dto.TopicTreeDTO;
 import com.mapnamind.data.mapper.TopicTreeDTOMapper;
@@ -75,13 +76,17 @@ public class TopicTreeService implements ITopicTreeService {
                     getAllDeviceNames.containsKey(device.getSerialNumber())
             ).toList();
 
-            return findTopicTrees(searchDevices, getDevicesName(devices.stream().map(DeviceView::getId).toList(), deviceName));
+            return findTopicTrees(searchDevices, getAllDeviceNames);
         } else if (description != null && !description.isEmpty()) {
             List<TopicTree> entities = repository.findByDescription(description);
+            List<String> deviceTypeNames = devices.stream().map(DeviceView::getDeviceTypeName).toList();
             List<TopicTree> finalTopicTrees = new ArrayList<>();
             for (TopicTree entity : entities) {
-                finalTopicTrees.add(entity);
-                findAllParentsOfThisTopic(entity.getParent(), entities);
+                if (deviceTypeNames.contains(entity.getPath().split(SLASH)[0])) {
+                    finalTopicTrees.add(entity);
+                    findAllParentsOfThisTopic(entity.getParent(), finalTopicTrees); // Use finalTopicTrees instead of entities
+                }
+
             }
             List<TopicTreeDTO> dto = generateParentTree(
                     Mappers.getMapper(TopicTreeDTOMapper.class).sourcesToTargets(finalTopicTrees), devices,
@@ -98,7 +103,9 @@ public class TopicTreeService implements ITopicTreeService {
         if (entity.isEmpty()) {
             return;
         }
-        rootTopicTrees.add(entity.get());
+        if (!rootTopicTrees.stream().map(TopicTree::getId).toList().contains(entity.get().getId())) {
+            rootTopicTrees.add(entity.get());
+        }
         if (parent.getParent() != null) {
             findAllParentsOfThisTopic(parent.getParent(), rootTopicTrees);
         }
