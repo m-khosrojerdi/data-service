@@ -5,8 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.sql.Timestamp;
-
 @Data
 @Builder
 @NoArgsConstructor
@@ -14,5 +12,5 @@ import java.sql.Timestamp;
 public class DataProjectionDTO {
     private Double value;
     private Double valueChanges;
-    private Timestamp dateTime;
+    private String dateTime;
 }

@@ -1,6 +1,7 @@
 package com.mapnamind.data.service.impl;
 
 import com.mapnamind.common.execption.ServiceException;
+import com.mapnamind.common.util.DateTimeUtil;
 import com.mapnamind.common.util.ExcelUtil;
 import com.mapnamind.common.util.ZipUtil;
 import com.mapnamind.data.dto.DataProjectionDTO;
@@ -13,6 +14,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -38,7 +40,7 @@ public class DataService implements IDataService {
                     dataRepository.findAllByTopicAndLogTime(signalDTO.getTopic(), startDate, endDate, signalDTO.getIsProperty(), signalDTO.getSampleCount()) :
                     dataRepository.delta(signalDTO.getTopic(), startDate, endDate, signalDTO.getIsProperty(), signalDTO.getInterval(), signalDTO.getAggregation()))
                     .stream().map(dataProjection -> DataProjectionDTO.builder()
-                            .dateTime(dataProjection.getDateTime())
+                            .dateTime(dataProjection.getDateTime().toString())
                             .value(dataProjection.getValue())
                             .valueChanges(dataProjection.getValueChanges()).build()).toList();
         } catch (Exception e) {
@@ -48,20 +50,20 @@ public class DataService implements IDataService {
     }
 
     @Override
-    public byte[] export(String startDate, String endDate, List<SignalDTO> signalDTOs) {
+    public byte[] export(String startDate, String endDate, List<SignalDTO> signalDTOs, Boolean isPersian) {
         Workbook workbook = new XSSFWorkbook();
         for (SignalDTO signalDTO : signalDTOs) {
             resolveProperty(signalDTO);
             List<DataProjectionDTO> data = dataRepository.findAllByTopicAndLogTime(
                             signalDTO.getTopic(), startDate, endDate, signalDTO.getIsProperty(), null)
                     .stream().map(dataProjection -> DataProjectionDTO.builder()
-                            .dateTime(dataProjection.getDateTime())
+                            .dateTime(isPersian ? DateTimeUtil.toJalaliDateTime(dataProjection.getDateTime(), ZoneId.systemDefault()) : dataProjection.getDateTime().toString())
                             .value(dataProjection.getValue())
                             .valueChanges(dataProjection.getValueChanges()).build()).toList();
             String topicParts[] = signalDTO.getTopic().split(SLASH);
             String sheetName = topicParts[1] + DASH + topicTreeService.findByPath(topicParts[0] + SLASH +
                     Arrays.stream(topicParts).skip(2).collect(Collectors.joining(SLASH))).getTopic();
-            ExcelUtil.createSheet(workbook, List.of("dateTime", "value"), data, sheetName);
+            ExcelUtil.createSheet(workbook, List.of("dateTime:تاریخ", "value:مقدار"), data, sheetName, isPersian);
         }
         return ZipUtil.toZip(ExcelUtil.toBytes(workbook), "data.xlsx");
     }

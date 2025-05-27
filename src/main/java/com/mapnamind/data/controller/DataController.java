@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -24,8 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.mapnamind.common.util.Constant.COLON;
-import static com.mapnamind.common.util.Constant.COMMA;
+import static com.mapnamind.common.util.Constant.*;
 import static com.mapnamind.web.enumeration.Swagger.ACCESS_TOKEN;
 import static com.mapnamind.web.enumeration.Swagger.LANGUAGE;
 
@@ -75,7 +75,8 @@ public class DataController extends Base {
 
         byte[] bytes = dataService.export(
                 view.getStartDate(), view.getEndDate(),
-                map(SignalMapper.class).targetsToSources(view.getSignals()));
+                map(SignalMapper.class).targetsToSources(view.getSignals()),
+                LocaleContextHolder.getLocale().equals(FA_LOCALE));
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
