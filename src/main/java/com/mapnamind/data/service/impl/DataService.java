@@ -54,8 +54,8 @@ public class DataService implements IDataService {
         Workbook workbook = new XSSFWorkbook();
         for (SignalDTO signalDTO : signalDTOs) {
             resolveProperty(signalDTO);
-            List<DataProjectionDTO> data = dataRepository.findAllByTopicAndLogTime(
-                            signalDTO.getTopic(), startDate, endDate, signalDTO.getIsProperty(), null)
+            List<DataProjectionDTO> data = dataRepository.delta(
+                            signalDTO.getTopic(), startDate, endDate, signalDTO.getIsProperty(), signalDTO.getInterval(), signalDTO.getAggregation())
                     .stream().map(dataProjection -> DataProjectionDTO.builder()
                             .dateTime(isPersian ? DateTimeUtil.toJalaliDateTime(dataProjection.getDateTime(), ZoneId.systemDefault()) : dataProjection.getDateTime().toString())
                             .value(dataProjection.getValue())
