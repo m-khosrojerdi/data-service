@@ -11,6 +11,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class DataProjectionDTO {
     private Double value;
-    private Double valueChanges;
     private String dateTime;
 }

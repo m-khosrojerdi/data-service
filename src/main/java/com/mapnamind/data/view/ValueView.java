@@ -15,6 +15,7 @@ import java.util.List;
 public class ValueView implements Serializable {
 
     private String name;
+    private String effectiveInterval;
     private List<DataValue> data;
 
 }

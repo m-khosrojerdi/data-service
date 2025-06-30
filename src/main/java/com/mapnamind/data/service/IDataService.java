@@ -7,6 +7,6 @@ import java.util.List;
 
 public interface IDataService {
 
-    List<DataProjectionDTO> findAllByTopicAndLogTime(String startDate, String endDate, SignalDTO signalDTO);
+    List<DataProjectionDTO> aggregate(String startDate, String endDate, String effectiveInterval, SignalDTO signalDTO);
     byte[] export(String startDate, String endDate, List<SignalDTO> signalDTOs, Boolean isPersian);
 }

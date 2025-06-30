@@ -1,5 +1,6 @@
 package com.mapnamind.data.controller;
 
+import com.mapnamind.common.util.DateTimeUtil;
 import com.mapnamind.data.mapper.DataMapper;
 import com.mapnamind.data.mapper.SignalMapper;
 import com.mapnamind.data.service.impl.DataService;
@@ -22,6 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
@@ -57,9 +59,13 @@ public class DataController extends Base {
         }
 
         for (SignalView signalView : signalViews) {
+            Duration inputDuration = DateTimeUtil.postgresIntervalToDuration(signalView.getInterval());
+            Duration computedDuration = Duration.between(DateTimeUtil.toDateTime(view.getStartDate()), DateTimeUtil.toDateTime(view.getEndDate())).dividedBy(signalView.getSampleCount());
+            String effectiveInterval = inputDuration.compareTo(computedDuration) > 0 ? signalView.getInterval() : DateTimeUtil.durationToPostgresInterval(computedDuration);
             view.addValue(ValueView.builder()
                     .name(signalView.getTopic())
-                    .data(dataService.findAllByTopicAndLogTime(view.getStartDate(), view.getEndDate(), map(SignalMapper.class).targetToSource(signalView))
+                    .effectiveInterval(effectiveInterval)
+                    .data(dataService.aggregate(view.getStartDate(), view.getEndDate(), effectiveInterval, map(SignalMapper.class).targetToSource(signalView))
                             .stream().map(data -> map(DataMapper.class).sourceToTarget(data)).toList())
                     .build());
         }

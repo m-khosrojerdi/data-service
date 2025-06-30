@@ -12,7 +12,6 @@ public interface DataMapper extends BaseMapper<DataProjectionDTO, DataValue> {
     @Override
     @Mapping(source = "dateTime", target = "x")
     @Mapping(source = "value", target = "y")
-    @Mapping(source = "valueChanges", target = "c")
     DataValue sourceToTarget(DataProjectionDTO data);
 
 }

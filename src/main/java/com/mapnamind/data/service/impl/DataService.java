@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -33,16 +32,15 @@ public class DataService implements IDataService {
     private final DataRepository dataRepository;
     private final TopicTreeService topicTreeService;
 
-    public List<DataProjectionDTO> findAllByTopicAndLogTime(String startDate, String endDate, SignalDTO signalDTO) {
+    public List<DataProjectionDTO> aggregate(String startDate, String endDate, String effectiveInterval, SignalDTO signalDTO) {
         try {
             resolveProperty(signalDTO);
-            return (Objects.isNull(signalDTO.getInterval()) ?
-                    dataRepository.findAllByTopicAndLogTime(signalDTO.getTopic(), startDate, endDate, signalDTO.getIsProperty(), signalDTO.getSampleCount()) :
-                    dataRepository.delta(signalDTO.getTopic(), startDate, endDate, signalDTO.getIsProperty(), signalDTO.getInterval(), signalDTO.getAggregation()))
+            return (dataRepository.aggregate(signalDTO.getTopic(), startDate, endDate, signalDTO.getIsProperty(),
+                    effectiveInterval,
+                    signalDTO.getAggregation()))
                     .stream().map(dataProjection -> DataProjectionDTO.builder()
                             .dateTime(dataProjection.getDateTime().toString())
-                            .value(dataProjection.getValue())
-                            .valueChanges(dataProjection.getValueChanges()).build()).toList();
+                            .value(dataProjection.getValue()).build()).toList();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             throw new ServiceException("service.common.databaseError.9003");
@@ -54,12 +52,11 @@ public class DataService implements IDataService {
         Workbook workbook = new XSSFWorkbook();
         for (SignalDTO signalDTO : signalDTOs) {
             resolveProperty(signalDTO);
-            List<DataProjectionDTO> data = dataRepository.delta(
+            List<DataProjectionDTO> data = dataRepository.aggregate(
                             signalDTO.getTopic(), startDate, endDate, signalDTO.getIsProperty(), signalDTO.getInterval(), signalDTO.getAggregation())
                     .stream().map(dataProjection -> DataProjectionDTO.builder()
                             .dateTime(isPersian ? DateTimeUtil.toJalaliDateTime(dataProjection.getDateTime(), ZoneId.systemDefault()) : dataProjection.getDateTime().toString())
-                            .value(dataProjection.getValue())
-                            .valueChanges(dataProjection.getValueChanges()).build()).toList();
+                            .value(dataProjection.getValue()).build()).toList();
             String topicParts[] = signalDTO.getTopic().split(SLASH);
             String sheetName = topicParts[1] + DASH + topicTreeService.findByPath(topicParts[0] + SLASH +
                     Arrays.stream(topicParts).skip(2).collect(Collectors.joining(SLASH))).getTopic();

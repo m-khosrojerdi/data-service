@@ -13,6 +13,5 @@ public class DataValue implements Serializable {
 
     private String x;
     private Double y;
-    private Double c;
 
 }
