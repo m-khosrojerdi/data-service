@@ -1,6 +1,7 @@
 package com.mapnamind.data.controller;
 
 import com.mapnamind.common.util.DateTimeUtil;
+import com.mapnamind.data.dto.ExportRequest;
 import com.mapnamind.data.mapper.DataMapper;
 import com.mapnamind.data.mapper.SignalMapper;
 import com.mapnamind.data.service.impl.DataService;
@@ -16,10 +17,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -77,16 +74,12 @@ public class DataController extends Base {
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
-    public ResponseEntity<?> signalSelectorExport(@Valid @RequestBody SignalSelectorView view) {
+    public ResponseBody<SignalSelectorView> signalSelectorExport(@Valid @RequestBody SignalSelectorView view) {
 
-        byte[] bytes = dataService.export(
-                view.getStartDate(), view.getEndDate(),
-                map(SignalMapper.class).targetsToSources(view.getSignals()),
-                LocaleContextHolder.getLocale().equals(FA_LOCALE));
+        view.setExportUuid(dataService.export(ExportRequest.builder().startDate(view.getStartDate())
+                .endDate(view.getEndDate()).signalDTOs(map(SignalMapper.class).targetsToSources(view.getSignals()))
+                .isPersian(LocaleContextHolder.getLocale().equals(FA_LOCALE)).build()));
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        headers.setContentDispositionFormData("attachment", "data.zip");
-        return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
+        return responseEntityTemplate.response("controller.data.export.successful.200", view);
     }
 }

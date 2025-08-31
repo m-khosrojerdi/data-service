@@ -1,22 +1,32 @@
 package com.mapnamind.data.service.impl;
 
+import com.google.gson.Gson;
 import com.mapnamind.common.execption.ServiceException;
+import com.mapnamind.common.file.FileManagerConfig;
+import com.mapnamind.common.payload.file.FileManagerResponse;
 import com.mapnamind.common.util.DateTimeUtil;
 import com.mapnamind.common.util.ExcelUtil;
 import com.mapnamind.common.util.ZipUtil;
 import com.mapnamind.data.dto.DataProjectionDTO;
+import com.mapnamind.data.dto.ExportRequest;
 import com.mapnamind.data.dto.SignalDTO;
 import com.mapnamind.data.repository.DataRepository;
 import com.mapnamind.data.service.IDataService;
+import com.mapnamind.data.service.WebSocketService;
+import com.mapnamind.web.file.FileManagerTemplate;
+import com.mapnamind.web.util.HttpRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -29,8 +39,12 @@ import static com.mapnamind.common.util.Constant.SLASH;
 @RequiredArgsConstructor
 public class DataService implements IDataService {
 
-    private final DataRepository dataRepository;
+    private final FileManagerConfig fileManagerConfig;
+    private final WebSocketService webSocketService;
     private final TopicTreeService topicTreeService;
+    private final DataRepository dataRepository;
+    private final JmsTemplate jmsTemplate;
+    private final Gson gson;
 
     public List<DataProjectionDTO> aggregate(String startDate, String endDate, String effectiveInterval, SignalDTO signalDTO) {
         try {
@@ -48,21 +62,13 @@ public class DataService implements IDataService {
     }
 
     @Override
-    public byte[] export(String startDate, String endDate, List<SignalDTO> signalDTOs, Boolean isPersian) {
-        Workbook workbook = new XSSFWorkbook();
-        for (SignalDTO signalDTO : signalDTOs) {
-            resolveProperty(signalDTO);
-            List<DataProjectionDTO> data = dataRepository.aggregate(
-                            signalDTO.getTopic(), startDate, endDate, signalDTO.getIsProperty(), signalDTO.getInterval(), signalDTO.getAggregation())
-                    .stream().map(dataProjection -> DataProjectionDTO.builder()
-                            .dateTime(isPersian ? DateTimeUtil.toJalaliDateTime(dataProjection.getDateTime(), ZoneId.systemDefault()) : dataProjection.getDateTime().toString())
-                            .value(dataProjection.getValue()).build()).toList();
-            String topicParts[] = signalDTO.getTopic().split(SLASH);
-            String sheetName = topicParts[1] + DASH + topicTreeService.findByPath(topicParts[0] + SLASH +
-                    Arrays.stream(topicParts).skip(2).collect(Collectors.joining(SLASH))).getTopic();
-            ExcelUtil.createSheet(workbook, List.of("dateTime:تاریخ", "value:مقدار"), data, sheetName, isPersian);
-        }
-        return ZipUtil.toZip(ExcelUtil.toBytes(workbook), "data.xlsx");
+    public String export(ExportRequest exportRequest) {
+
+        String uuid = UUID.randomUUID().toString();
+        exportRequest.setUuid(uuid);
+        exportRequest.setUsername(HttpRequest.getUsername());
+        jmsTemplate.convertAndSend("signal-selector-export", exportRequest);
+        return uuid;
     }
 
     private void resolveProperty(SignalDTO signalDTO) {
@@ -76,5 +82,28 @@ public class DataService implements IDataService {
                 signalDTO.setTopic(signalDTO.getTopic().replace("/{" + matcher.group() + "}", ""));
             }
         }
+    }
+
+    @JmsListener(destination = "signal-selector-export")
+    public void consumeExportRequest(ExportRequest exportRequest) throws Exception {
+
+        Workbook workbook = new XSSFWorkbook();
+        for (SignalDTO signalDTO : exportRequest.getSignalDTOs()) {
+            resolveProperty(signalDTO);
+            List<DataProjectionDTO> data = dataRepository.aggregate(
+                            signalDTO.getTopic(), exportRequest.getStartDate(), exportRequest.getEndDate(), signalDTO.getIsProperty(), signalDTO.getInterval(), signalDTO.getAggregation())
+                    .stream().map(dataProjection -> DataProjectionDTO.builder()
+                            .dateTime(exportRequest.getIsPersian() ? DateTimeUtil.toJalaliDateTime(dataProjection.getDateTime(), ZoneId.systemDefault()) : dataProjection.getDateTime().toString())
+                            .value(dataProjection.getValue()).build()).toList();
+            String topicParts[] = signalDTO.getTopic().split(SLASH);
+            String sheetName = topicParts[1] + DASH + topicTreeService.findByPath(topicParts[0] + SLASH +
+                    Arrays.stream(topicParts).skip(2).collect(Collectors.joining(SLASH))).getTopic();
+            ExcelUtil.createSheet(workbook, List.of("dateTime:تاریخ", "value:مقدار"), data, sheetName, exportRequest.getIsPersian());
+        }
+
+        FileManagerResponse file = FileManagerTemplate.getInstance(fileManagerConfig)
+                .upload(ZipUtil.toZip(ExcelUtil.toBytes(workbook), "data.xlsx"), "data.zip");
+
+        webSocketService.sendToUser(exportRequest.getUsername(), gson.toJson(ExportRequest.builder().uuid(exportRequest.getUuid()).file(file).build()));
     }
 }

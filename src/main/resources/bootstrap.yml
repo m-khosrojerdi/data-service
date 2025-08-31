@@ -3,7 +3,7 @@ spring:
     name: data-service
   cloud:
     config:
-      name: ${spring.application.name}, common-config, datasource, service
+      name: ${spring.application.name}, common-config, datasource, service, activemq
 ---
 spring:
   config:

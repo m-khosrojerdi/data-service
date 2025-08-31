@@ -26,6 +26,8 @@ public class SignalSelectorView implements Serializable {
     @Date
     private String endDate;
 
+    private String exportUuid;
+
     public void addValue(ValueView value) {
         if (values == null) {
             values = new ArrayList<>();
