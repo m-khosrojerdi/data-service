@@ -15,6 +15,7 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
     @Override
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
         attributes.put("username", HttpRequest.getUsername());
+        response.getHeaders().add("sec-websocket-protocol", request.getHeaders().getFirst("sec-websocket-protocol"));
         return true;
     }
 
