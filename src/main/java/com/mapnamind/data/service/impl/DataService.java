@@ -7,9 +7,7 @@ import com.mapnamind.common.payload.file.FileManagerResponse;
 import com.mapnamind.common.util.DateTimeUtil;
 import com.mapnamind.common.util.ExcelUtil;
 import com.mapnamind.common.util.ZipUtil;
-import com.mapnamind.data.dto.DataProjectionDTO;
-import com.mapnamind.data.dto.ExportRequest;
-import com.mapnamind.data.dto.SignalDTO;
+import com.mapnamind.data.dto.*;
 import com.mapnamind.data.repository.DataRepository;
 import com.mapnamind.data.service.IDataService;
 import com.mapnamind.data.service.WebSocketService;
@@ -31,8 +29,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static com.mapnamind.common.util.Constant.DASH;
-import static com.mapnamind.common.util.Constant.SLASH;
+import static com.mapnamind.common.util.Constant.*;
 
 @Slf4j
 @Service
@@ -90,15 +87,20 @@ public class DataService implements IDataService {
         Workbook workbook = new XSSFWorkbook();
         for (SignalDTO signalDTO : exportRequest.getSignalDTOs()) {
             resolveProperty(signalDTO);
-            List<DataProjectionDTO> data = dataRepository.aggregate(
+            List<ExportDataProjectionDTO> data = dataRepository.aggregate(
                             signalDTO.getTopic(), exportRequest.getStartDate(), exportRequest.getEndDate(), signalDTO.getIsProperty(), signalDTO.getInterval(), signalDTO.getAggregation())
-                    .stream().map(dataProjection -> DataProjectionDTO.builder()
-                            .dateTime(exportRequest.getIsPersian() ? DateTimeUtil.toJalaliDateTime(dataProjection.getDateTime(), ZoneId.systemDefault()) : dataProjection.getDateTime().toString())
-                            .value(dataProjection.getValue()).build()).toList();
+                    .stream().map(dataProjection -> {
+                        String[] dateTime = (exportRequest.getIsPersian() ? DateTimeUtil.toJalaliDateTime(dataProjection.getDateTime(), ZoneId.systemDefault()) : dataProjection.getDateTime().toString()).split(SPACE);
+                        return ExportDataProjectionDTO.builder()
+                                .date(dateTime[0])
+                                .time(dateTime[1])
+                                .value(dataProjection.getValue()).build();
+                    }).toList();
             String topicParts[] = signalDTO.getTopic().split(SLASH);
-            String sheetName = topicParts[1] + DASH + topicTreeService.findByPath(topicParts[0] + SLASH +
-                    Arrays.stream(topicParts).skip(2).collect(Collectors.joining(SLASH))).getTopic();
-            ExcelUtil.createSheet(workbook, List.of("dateTime:تاریخ", "value:مقدار"), data, sheetName, exportRequest.getIsPersian());
+            TopicTreeDTO topicTreeDTO = topicTreeService.findByPath(topicParts[0] + SLASH +
+                    Arrays.stream(topicParts).skip(2).collect(Collectors.joining(SLASH)));
+            String sheetName = topicTreeDTO.getDescription() + DASH + topicParts[1];
+            ExcelUtil.createSheet(workbook, List.of("date:تاریخ", "time:زمان", "value:مقدار"), data, sheetName, exportRequest.getIsPersian());
         }
 
         FileManagerResponse file = FileManagerTemplate.getInstance(fileManagerConfig)
