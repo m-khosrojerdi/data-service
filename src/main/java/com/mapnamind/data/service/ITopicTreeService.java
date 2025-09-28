@@ -10,7 +10,8 @@ public interface ITopicTreeService {
 
     List<TopicTreeDTO> findChildrenTreeFromParent(Long parentId);
 
-    List<TopicTreeDTO> findBySerialOrDescription(String deviceName, String serialNumber, String description);
+    List<TopicTreeDTO> findBySerialOrDescription(String deviceName, String serialNumber, String description, Long companyId);
 
     TopicTreeDTO findByPath(String path);
+
 }

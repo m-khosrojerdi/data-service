@@ -5,7 +5,7 @@ import com.mapnamind.common.dto.device.DeviceDTO;
 import com.mapnamind.common.dto.userAsset.UserAssetDTO;
 import com.mapnamind.common.execption.ServiceException;
 import com.mapnamind.common.model.entity.TopicTree;
-import com.mapnamind.common.util.Constant;
+import com.mapnamind.common.view.company.CompanyView;
 import com.mapnamind.common.view.device.DeviceView;
 import com.mapnamind.data.dto.TopicTreeDTO;
 import com.mapnamind.data.mapper.TopicTreeDTOMapper;
@@ -55,13 +55,31 @@ public class TopicTreeService implements ITopicTreeService {
     }
 
     @Override
-    public List<TopicTreeDTO> findBySerialOrDescription(String deviceName, String serialNumber, String description) {
+    public List<TopicTreeDTO> findBySerialOrDescription(String deviceName, String serialNumber, String description,
+                                                        Long companyId) {
+        List<CompanyView> companies;
+        if (companyId != null) {
+            companies = apiService.callCollection(ServiceName.USER_GET_COMPANY, null,
+                    new TypeToken<List<CompanyView>>() {
+                    }.getType());
+            if (companies.stream().noneMatch(company -> company.getId().equals(companyId))) {
+                throw new ServiceException("service.topicTree.common.notExistsMembersInThisCompany.9006");
+            }
+        }
         List<DeviceView> devices = apiService.call(ServiceName.USER_GET_ALL_SERIAL_NUMBER_BY_ACCESS_LEVEL,
                 null, SERIAL_NUMBERS_TYPE);
         if (devices == null || devices.isEmpty()) {
             throw new ServiceException("service.topicTree.common.emptyDevices.9004");
         }
-        if (serialNumber != null && !serialNumber.isEmpty()) {
+        if (companyId != null) {
+            devices = devices.stream().filter(device -> device.getCompany() == companyId).toList();
+            if (devices.isEmpty()) {
+                return List.of();
+            }
+        }
+        if (serialNumber == null && deviceName == null && description == null) {
+            return findTopicTrees(devices, getDevicesName(devices.stream().map(DeviceView::getId).toList(), null));
+        } else if (serialNumber != null && !serialNumber.isEmpty()) {
             List<DeviceView> searchDevices = devices.stream().filter(device ->
                     device.getSerialNumber().contains(serialNumber)
             ).toList();

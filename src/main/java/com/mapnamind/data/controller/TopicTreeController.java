@@ -61,8 +61,11 @@ public class TopicTreeController extends Base {
             @SecurityRequirement(name = LANGUAGE)})
     public ResponseBody<List<TopicTreeView>> search(@RequestParam(name = "deviceName", required = false) String deviceName,
                                                     @RequestParam(name = "serialNumber", required = false) String serialNumber,
-                                                    @RequestParam(name = "description", required = false) String description) {
-        List<TopicTreeDTO> dto = service.findBySerialOrDescription(deviceName.toLowerCase(), serialNumber, description);
+                                                    @RequestParam(name = "description", required = false) String description,
+                                                    @RequestParam(name = "company", required = false) Long company) {
+        List<TopicTreeDTO> dto = service.findBySerialOrDescription(
+                deviceName != null ? deviceName.toLowerCase() : deviceName, serialNumber, description, company
+        );
         List<TopicTreeView> view = map(TopicTreeMapper.class).sourcesToTargets(dto);
         return responseEntityTemplate.response("controller.topiTree.getTopicTree.success.200", view);
     }
