@@ -30,6 +30,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.mapnamind.common.util.Constant.*;
+import static com.mapnamind.data.util.Constant.*;
 
 @Slf4j
 @Service
@@ -64,7 +65,7 @@ public class DataService implements IDataService {
         String uuid = UUID.randomUUID().toString();
         exportRequest.setUuid(uuid);
         exportRequest.setUsername(HttpRequest.getUsername());
-        jmsTemplate.convertAndSend("signal-selector-export", exportRequest);
+        jmsTemplate.convertAndSend(SIGNAL_SELECTOR_EXPORT_CONSUMER_QUEUE_NAME, exportRequest);
         return uuid;
     }
 
@@ -81,9 +82,26 @@ public class DataService implements IDataService {
         }
     }
 
-    @JmsListener(destination = "signal-selector-export")
+    @JmsListener(destination = SIGNAL_SELECTOR_EXPORT_CONSUMER_QUEUE_NAME,
+            concurrency = SIGNAL_SELECTOR_EXPORT_CONSUMER_QUEUE_CONCURRENCY)
     public void consumeExportRequest(ExportRequest exportRequest) throws Exception {
 
+        FileManagerResponse file;
+
+        try {
+            Workbook workbook = createExcel(exportRequest);
+
+            file = FileManagerTemplate.getInstance(fileManagerConfig).upload(ZipUtil.toZip(ExcelUtil.toBytes(workbook),
+                    SIGNAL_SELECTOR_EXCEL_FILE_NAME), SIGNAL_SELECTOR_EXCEL_ZIP_FILE_NAME);
+        } catch (Exception e) {
+            webSocketService.sendToUser(exportRequest.getUsername(), e.getMessage());
+            throw new Exception(e);
+        }
+
+        webSocketService.sendToUser(exportRequest.getUsername(), gson.toJson(ExportRequest.builder().uuid(exportRequest.getUuid()).file(file).build()));
+    }
+
+    private Workbook createExcel(ExportRequest exportRequest) {
         Workbook workbook = new XSSFWorkbook();
         for (SignalDTO signalDTO : exportRequest.getSignalDTOs()) {
             resolveProperty(signalDTO);
@@ -100,12 +118,8 @@ public class DataService implements IDataService {
             TopicTreeDTO topicTreeDTO = topicTreeService.findByPath(topicParts[0] + SLASH +
                     Arrays.stream(topicParts).skip(2).collect(Collectors.joining(SLASH)));
             String sheetName = topicTreeDTO.getDescription() + DASH + topicParts[1];
-            ExcelUtil.createSheet(workbook, List.of("date:تاریخ", "time:زمان", "value:مقدار"), data, sheetName, exportRequest.getIsPersian());
+            ExcelUtil.createSheet(workbook, SIGNAL_SELECTOR_EXCEL_COLUMNS, data, sheetName, exportRequest.getIsPersian());
         }
-
-        FileManagerResponse file = FileManagerTemplate.getInstance(fileManagerConfig)
-                .upload(ZipUtil.toZip(ExcelUtil.toBytes(workbook), "data.xlsx"), "data.zip");
-
-        webSocketService.sendToUser(exportRequest.getUsername(), gson.toJson(ExportRequest.builder().uuid(exportRequest.getUuid()).file(file).build()));
+        return workbook;
     }
 }
