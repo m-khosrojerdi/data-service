@@ -7,6 +7,7 @@ import com.mapnamind.common.execption.ServiceException;
 import com.mapnamind.common.model.entity.TopicTree;
 import com.mapnamind.common.view.company.CompanyView;
 import com.mapnamind.common.view.device.DeviceView;
+import com.mapnamind.common.view.deviceType.DeviceTypeView;
 import com.mapnamind.data.dto.TopicTreeDTO;
 import com.mapnamind.data.mapper.TopicTreeDTOMapper;
 import com.mapnamind.data.repository.TopicTreeRepository;
@@ -17,6 +18,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mapstruct.factory.Mappers;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Type;
@@ -45,6 +47,25 @@ public class TopicTreeService implements ITopicTreeService {
             throw new ServiceException("service.topicTree.common.emptyDevices.9004");
         }
         return findTopicTrees(devices, getDevicesName(devices.stream().map(DeviceView::getId).toList(), null));
+    }
+
+    @Override
+    public List<TopicTreeDTO> findTopicsByDeviceType(Long deviceTypeId) {
+
+        DeviceTypeView deviceType = apiService.call(ServiceName.DEVICE_TYPE_FIND_BY_ID, null,
+                List.of(deviceTypeId.toString()),null,
+                new TypeToken<DeviceTypeView>() {
+                }.getType());
+        if (deviceType == null) {
+            throw new ServiceException("service.topicTree.common.deviceType.9007");
+        }
+        List<TopicTree> entity = repository.findAllByDeviceType(deviceType.getName(),"%alarm%");
+        if (entity.isEmpty()){
+            throw new ServiceException("service.topicTree.notFound.9010");
+        }
+        List<TopicTreeDTO> topics =  Mappers.getMapper(TopicTreeDTOMapper.class).sourcesToTargets(entity);
+        topics.forEach(topicTreeDTO -> topicTreeDTO.setChildren(findChildrenTreeFromParent(topicTreeDTO.getId())));
+        return topics;
     }
 
     @Override

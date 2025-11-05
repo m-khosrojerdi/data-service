@@ -21,6 +21,11 @@ public interface TopicTreeRepository extends JpaRepository<TopicTree, Long> {
     @Query("SELECT T FROM TopicTree T WHERE parent.id IN :PARENT_ID")
     List<TopicTree> findAllByParent(@Param("PARENT_ID") Long parentId);
 
+    @Query("SELECT T FROM TopicTree T WHERE parent.id IN " +
+            "( SELECT TT.id FROM TopicTree TT WHERE parent.topic = :DEVICE_TYPE_NAME AND path NOT LIKE :ALARM )")
+    List<TopicTree> findAllByDeviceType(@Param("DEVICE_TYPE_NAME") String deviceTpeName, @Param("ALARM") String alarm);
+
+
     List<TopicTree> findAllByParentIsNull();
 
     List<TopicTree> findAllByParentIsNotNull();

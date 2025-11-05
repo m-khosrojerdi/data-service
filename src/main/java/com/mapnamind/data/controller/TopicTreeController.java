@@ -40,7 +40,7 @@ public class TopicTreeController extends Base {
     public ResponseBody<List<TopicTreeView>> rootTree() {
         List<TopicTreeDTO> dto = service.findParentsTree();
         List<TopicTreeView> view = map(TopicTreeMapper.class).sourcesToTargets(dto);
-        return responseEntityTemplate.response("controller.topiTree.getTopicTree.success.200", view);
+        return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200", view);
     }
 
     @GetMapping("/children-tree/{parentId}")
@@ -51,7 +51,7 @@ public class TopicTreeController extends Base {
     public ResponseBody<List<TopicTreeView>> childrenTree(@PathVariable("parentId") Long parentId) {
         List<TopicTreeDTO> dto = service.findChildrenTreeFromParent(parentId);
         List<TopicTreeView> view = map(TopicTreeMapper.class).sourcesToTargets(dto);
-        return responseEntityTemplate.response("controller.topiTree.getTopicTree.success.200", view);
+        return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200", view);
     }
 
     @GetMapping("/search")
@@ -67,7 +67,18 @@ public class TopicTreeController extends Base {
                 deviceName != null ? deviceName.toLowerCase() : deviceName, serialNumber, description, company
         );
         List<TopicTreeView> view = map(TopicTreeMapper.class).sourcesToTargets(dto);
-        return responseEntityTemplate.response("controller.topiTree.getTopicTree.success.200", view);
+        return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200", view);
+    }
+
+    @GetMapping("/get")
+    @PreAuthorize(AuthorizeType.ADMIN_CUSTOMER_MANUFACTURE_AGENCY)
+    @SecurityRequirements(value = {
+            @SecurityRequirement(name = ACCESS_TOKEN),
+            @SecurityRequirement(name = LANGUAGE)})
+    public ResponseBody<List<TopicTreeView>> getTopics(@RequestParam Long deviceTypeId) {
+        List<TopicTreeDTO> dto = service.findTopicsByDeviceType(deviceTypeId);
+        List<TopicTreeView> view = map(TopicTreeMapper.class).sourcesToTargets(dto);
+        return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200", view);
     }
 
     @GetMapping("/date")
