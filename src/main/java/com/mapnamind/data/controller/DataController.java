@@ -56,9 +56,9 @@ public class DataController extends Base {
         }
 
         for (SignalView signalView : signalViews) {
-            Duration inputDuration = DateTimeUtil.postgresIntervalToDuration(signalView.getInterval());
-            Duration computedDuration = Duration.between(DateTimeUtil.toDateTime(view.getStartDate()), DateTimeUtil.toDateTime(view.getEndDate())).dividedBy(signalView.getSampleCount());
-            String effectiveInterval = inputDuration.compareTo(computedDuration) > 0 ? signalView.getInterval() : DateTimeUtil.durationToPostgresInterval(computedDuration);
+            Duration inputDuration = DateTimeUtil.rondToMinutes(DateTimeUtil.postgresIntervalToDuration(signalView.getInterval()));
+            Duration computedDuration = DateTimeUtil.rondToMinutes(Duration.between(DateTimeUtil.toDateTime(view.getStartDate()), DateTimeUtil.toDateTime(view.getEndDate())).dividedBy(signalView.getSampleCount()));
+            String effectiveInterval = DateTimeUtil.durationToPostgresInterval(inputDuration.compareTo(computedDuration) > 0 ? inputDuration : computedDuration);
             view.addValue(ValueView.builder()
                     .name(signalView.getTopic())
                     .effectiveInterval(effectiveInterval)
