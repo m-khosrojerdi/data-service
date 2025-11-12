@@ -25,6 +25,21 @@ public interface TopicTreeRepository extends JpaRepository<TopicTree, Long> {
             "( SELECT TT.id FROM TopicTree TT WHERE parent.topic = :DEVICE_TYPE_NAME AND path NOT LIKE :ALARM )")
     List<TopicTree> findAllByDeviceType(@Param("DEVICE_TYPE_NAME") String deviceTpeName, @Param("ALARM") String alarm);
 
+    @Query("SELECT T FROM TopicTree T WHERE (T.parent.topic = :DEVICE_TYPE_NAME OR T.topic = :DEVICE_TYPE_NAME) " +
+            "AND T.path LIKE :HUB")
+    List<TopicTree> findHasHubDeviceTypeTopics(@Param("DEVICE_TYPE_NAME") String deviceTypeName,@Param("HUB") String hubName);
+
+    @Query(value = """
+            WITH RECURSIVE subtree AS (
+                SELECT * FROM topic_tree WHERE topic = :TOPIC
+                UNION ALL
+                SELECT n.* FROM topic_tree n
+                JOIN subtree s ON n.parent_id = s.id
+                WHERE n.path NOT LIKE '%/alarm%'
+            )
+            SELECT * FROM subtree
+            """, nativeQuery = true)
+    List<TopicTree> findLeafTopics(@Param("TOPIC") String deviceTypeName);
 
     List<TopicTree> findAllByParentIsNull();
 
