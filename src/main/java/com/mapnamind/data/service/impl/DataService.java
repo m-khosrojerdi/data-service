@@ -112,7 +112,7 @@ public class DataService implements IDataService {
                         return ExportDataProjectionDTO.builder()
                                 .date(dateTime[0])
                                 .time(dateTime[1])
-                                .value(dataProjection.getValue()).build();
+                                .value(signalDTO.getTopic().matches(SIGNAL_SELECTOR_EXCEL_KILO_TOPICS_REGEX) ? dataProjection.getValue() / 1000 : dataProjection.getValue()).build();
                     }).toList();
             String topicParts[] = signalDTO.getTopic().split(SLASH);
             TopicTreeDTO topicTreeDTO = topicTreeService.findByPath(topicParts[0] + SLASH +
