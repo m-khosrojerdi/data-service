@@ -57,15 +57,40 @@ public class TopicTreeService implements ITopicTreeService {
                 new TypeToken<DeviceTypeView>() {
                 }.getType());
         if (deviceType == null) {
-            throw new ServiceException("service.topicTree.common.deviceType.9007");
+            throw new ServiceException("service.topicTree.common.deviceType.9008");
         }
-        List<TopicTree> entity = repository.findAllByDeviceType(deviceType.getName(),"%alarm%");
-        if (entity.isEmpty()){
-            throw new ServiceException("service.topicTree.notFound.9010");
+        //find topic of dt
+        List<TopicTree> topics;
+        if (deviceType.getHasHub()){
+            DeviceTypeView hubDeviceType = apiService.call(ServiceName.DEVICE_TYPE_FIND_BY_ID, null,
+                    List.of(deviceType.getHubId().toString()),null,
+                    new TypeToken<DeviceTypeView>() {
+                    }.getType());
+            topics = repository.findHasHubDeviceTypeTopics(deviceType.getName(), hubDeviceType.getName()+"/data%");
         }
-        List<TopicTreeDTO> topics =  Mappers.getMapper(TopicTreeDTOMapper.class).sourcesToTargets(entity);
-        topics.forEach(topicTreeDTO -> topicTreeDTO.setChildren(findChildrenTreeFromParent(topicTreeDTO.getId())));
-        return topics;
+        else {
+            topics = repository.findLeafTopics(deviceType.getName());
+        }
+        return Mappers.getMapper(TopicTreeDTOMapper.class).sourcesToTargets(topics);
+    }
+
+    @Override
+    public TopicTreeDTO updateTopic(TopicTreeDTO dto){
+
+        if (dto.getId() == null) {
+            throw new ServiceException("service.topicTree.common.idIsNull.9008");
+        }
+        TopicTree entity = repository.findById(dto.getId()).orElseThrow(
+                () -> new ServiceException("service.topicTree.common.notFound.9009")
+        );
+        if (!entity.getTopic().equals(dto.getTopic())) {
+            throw new ServiceException("service.topicTree.common.topicCantEdit.9010");
+        }
+        entity.setDescription(dto.getDescription());
+        entity.setIsVisible(dto.getIsVisible());
+        entity.setUnit(dto.getUnit());
+        return Mappers.getMapper(TopicTreeDTOMapper.class).sourceToTarget(repository.save(entity));
+
     }
 
     @Override

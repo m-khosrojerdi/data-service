@@ -81,6 +81,19 @@ public class TopicTreeController extends Base {
         return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200", view);
     }
 
+    @PostMapping("/update")
+    @PreAuthorize(AuthorizeType.ADMIN_CUSTOMER_MANUFACTURE_AGENCY)
+    @SecurityRequirements(value = {
+            @SecurityRequirement(name = ACCESS_TOKEN),
+            @SecurityRequirement(name = LANGUAGE)
+    })
+    public ResponseBody<TopicTreeView> update(@RequestBody TopicTreeView view){
+        TopicTreeDTO dto = service.updateTopic(map(TopicTreeMapper.class).targetToSource(view));
+        TopicTreeView updatedView = map(TopicTreeMapper.class).sourceToTarget(dto);
+        return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200", updatedView);
+
+    }
+
     @GetMapping("/date")
     @PreAuthorize(AuthorizeType.ADMIN_CUSTOMER_MANUFACTURE_AGENCY)
     @SecurityRequirements(value = {

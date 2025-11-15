@@ -19,6 +19,8 @@ public class TopicTreeView implements Serializable {
     private Long parentId;
     private Integer isProperty;
     private String description;
+    private Boolean isVisible;
+    private String unit;
     private List<TopicTreeView> children;
 
 }

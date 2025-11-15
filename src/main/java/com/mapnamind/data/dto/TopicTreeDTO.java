@@ -29,6 +29,8 @@ public class TopicTreeDTO implements Serializable, Cloneable {
     private Date logTime;
     private String path;
     private Integer priority;
+    private Boolean isVisible;
+    private String unit;
     private List<TopicTreeDTO> children;
 
     public List<TopicTreeDTO> getChildren() {
