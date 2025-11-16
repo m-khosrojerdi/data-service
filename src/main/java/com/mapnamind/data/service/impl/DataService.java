@@ -60,7 +60,7 @@ public class DataService implements IDataService {
     }
 
     private Double decorateValue(String topic, Double value) {
-        return topic.matches(SIGNAL_SELECTOR_KILO_TOPICS_REGEX) ? value / 1000 : value;
+        return topic.matches(SIGNAL_SELECTOR_KILO_TOPICS_REGEX) ? value / 1_000 : value;
     }
 
     @Override
