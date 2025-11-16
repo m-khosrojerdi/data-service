@@ -52,11 +52,15 @@ public class DataService implements IDataService {
                     signalDTO.getAggregation()))
                     .stream().map(dataProjection -> DataProjectionDTO.builder()
                             .dateTime(dataProjection.getDateTime().toString())
-                            .value(dataProjection.getValue()).build()).toList();
+                            .value(decorateValue(signalDTO.getTopic(), dataProjection.getValue())).build()).toList();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             throw new ServiceException("service.common.databaseError.9003");
         }
+    }
+
+    private Double decorateValue(String topic, Double value) {
+        return topic.matches(SIGNAL_SELECTOR_KILO_TOPICS_REGEX) ? value / 1000 : value;
     }
 
     @Override
@@ -112,7 +116,7 @@ public class DataService implements IDataService {
                         return ExportDataProjectionDTO.builder()
                                 .date(dateTime[0])
                                 .time(dateTime[1])
-                                .value(signalDTO.getTopic().matches(SIGNAL_SELECTOR_EXCEL_KILO_TOPICS_REGEX) ? dataProjection.getValue() / 1000 : dataProjection.getValue()).build();
+                                .value(decorateValue(signalDTO.getTopic(), dataProjection.getValue())).build();
                     }).toList();
             String topicParts[] = signalDTO.getTopic().split(SLASH);
             TopicTreeDTO topicTreeDTO = topicTreeService.findByPath(topicParts[0] + SLASH +

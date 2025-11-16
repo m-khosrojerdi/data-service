@@ -9,5 +9,5 @@ public interface Constant {
     List<String> SIGNAL_SELECTOR_EXCEL_COLUMNS = List.of("date:تاریخ", "time:زمان", "value:مقدار");
     String SIGNAL_SELECTOR_EXCEL_FILE_NAME = "data.xlsx";
     String SIGNAL_SELECTOR_EXCEL_ZIP_FILE_NAME = "data.zip";
-    String SIGNAL_SELECTOR_EXCEL_KILO_TOPICS_REGEX = ".*(ace|appe|reae)$";
+    String SIGNAL_SELECTOR_KILO_TOPICS_REGEX = ".*(ace|appe|reae)$";
 }
