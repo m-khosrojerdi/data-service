@@ -71,7 +71,7 @@ public class TopicTreeController extends Base {
     }
 
     @GetMapping("/get")
-    @PreAuthorize(AuthorizeType.ADMIN_CUSTOMER_MANUFACTURE_AGENCY)
+    @PreAuthorize(AuthorizeType.ADMIN)
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
@@ -82,7 +82,7 @@ public class TopicTreeController extends Base {
     }
 
     @PostMapping("/update")
-    @PreAuthorize(AuthorizeType.ADMIN_CUSTOMER_MANUFACTURE_AGENCY)
+    @PreAuthorize(AuthorizeType.ADMIN)
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)

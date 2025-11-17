@@ -18,7 +18,6 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mapstruct.factory.Mappers;
-import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Type;
@@ -53,29 +52,28 @@ public class TopicTreeService implements ITopicTreeService {
     public List<TopicTreeDTO> findTopicsByDeviceType(Long deviceTypeId) {
 
         DeviceTypeView deviceType = apiService.call(ServiceName.DEVICE_TYPE_FIND_BY_ID, null,
-                List.of(deviceTypeId.toString()),null,
+                List.of(deviceTypeId.toString()), null,
                 new TypeToken<DeviceTypeView>() {
                 }.getType());
         if (deviceType == null) {
             throw new ServiceException("service.topicTree.common.deviceType.9008");
         }
-        //find topic of dt
+
         List<TopicTree> topics;
-        if (deviceType.getHasHub()){
+        if (deviceType.getHasHub()) {
             DeviceTypeView hubDeviceType = apiService.call(ServiceName.DEVICE_TYPE_FIND_BY_ID, null,
-                    List.of(deviceType.getHubId().toString()),null,
+                    List.of(deviceType.getHubId().toString()), null,
                     new TypeToken<DeviceTypeView>() {
                     }.getType());
-            topics = repository.findHasHubDeviceTypeTopics(deviceType.getName(), hubDeviceType.getName()+"/data%");
-        }
-        else {
+            topics = repository.findHasHubDeviceTypeTopics(deviceType.getName(), hubDeviceType.getName() + "/data%");
+        } else {
             topics = repository.findLeafTopics(deviceType.getName());
         }
         return Mappers.getMapper(TopicTreeDTOMapper.class).sourcesToTargets(topics);
     }
 
     @Override
-    public TopicTreeDTO updateTopic(TopicTreeDTO dto){
+    public TopicTreeDTO updateTopic(TopicTreeDTO dto) {
 
         if (dto.getId() == null) {
             throw new ServiceException("service.topicTree.common.idIsNull.9008");
@@ -87,7 +85,12 @@ public class TopicTreeService implements ITopicTreeService {
             throw new ServiceException("service.topicTree.common.topicCantEdit.9010");
         }
         entity.setDescription(dto.getDescription());
-        entity.setIsVisible(dto.getIsVisible());
+        if (!dto.getIsVisible().equals(entity.getIsVisible())) {
+            List<TopicTree> children = repository.findAllByParent(entity.getId());
+            children.forEach(child -> child.setIsVisible(dto.getIsVisible()));
+            repository.saveAll(children);
+            entity.setIsVisible(dto.getIsVisible());
+        }
         entity.setUnit(dto.getUnit());
         return Mappers.getMapper(TopicTreeDTOMapper.class).sourceToTarget(repository.save(entity));
 
