@@ -81,7 +81,7 @@ public class TopicTreeController extends Base {
         return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200", view);
     }
 
-    @PostMapping("/update")
+    @PutMapping("/update")
     @PreAuthorize(AuthorizeType.ADMIN)
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
@@ -90,7 +90,7 @@ public class TopicTreeController extends Base {
     public ResponseBody<TopicTreeView> update(@RequestBody TopicTreeView view){
         TopicTreeDTO dto = service.updateTopic(map(TopicTreeMapper.class).targetToSource(view));
         TopicTreeView updatedView = map(TopicTreeMapper.class).sourceToTarget(dto);
-        return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200", updatedView);
+        return responseEntityTemplate.response("controller.topicTree.updateTopicTree.success.200", updatedView);
 
     }
 
