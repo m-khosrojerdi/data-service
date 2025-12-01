@@ -6,6 +6,7 @@ import com.mapnamind.common.file.FileManagerConfig;
 import com.mapnamind.common.payload.file.FileManagerResponse;
 import com.mapnamind.common.util.DateTimeUtil;
 import com.mapnamind.common.util.ExcelUtil;
+import com.mapnamind.common.util.StringUtil;
 import com.mapnamind.common.util.ZipUtil;
 import com.mapnamind.data.dto.*;
 import com.mapnamind.data.repository.DataRepository;
@@ -121,7 +122,7 @@ public class DataService implements IDataService {
             String topicParts[] = signalDTO.getTopic().split(SLASH);
             TopicTreeDTO topicTreeDTO = topicTreeService.findByPath(topicParts[0] + SLASH +
                     Arrays.stream(topicParts).skip(2).collect(Collectors.joining(SLASH)));
-            String sheetName = topicTreeDTO.getDescription() + DASH + topicParts[1];
+            String sheetName = StringUtil.get(topicTreeDTO.getDescription()).orElse(topicTreeDTO.getTopic()) + DASH + topicParts[1];
             ExcelUtil.createSheet(workbook, SIGNAL_SELECTOR_EXCEL_COLUMNS, data, sheetName, exportRequest.getIsPersian());
         }
         return workbook;
