@@ -122,7 +122,9 @@ public class DataService implements IDataService {
             String topicParts[] = signalDTO.getTopic().split(SLASH);
             TopicTreeDTO topicTreeDTO = topicTreeService.findByPath(topicParts[0] + SLASH +
                     Arrays.stream(topicParts).skip(2).collect(Collectors.joining(SLASH)));
-            String sheetName = StringUtil.get(topicTreeDTO.getDescription()).orElse(topicTreeDTO.getTopic()) + DASH + topicParts[1];
+            String sheetName = StringUtil.keepLeading(StringUtil.get(topicTreeDTO.getDescription()).orElse(topicTreeDTO.getTopic()), 24) +
+                    DASH +
+                    StringUtil.keepTrailing(topicParts[1], 6);
             ExcelUtil.createSheet(workbook, SIGNAL_SELECTOR_EXCEL_COLUMNS, data, sheetName, exportRequest.getIsPersian());
         }
         return workbook;
