@@ -2,8 +2,10 @@ package com.mapnamind.data.controller;
 
 import com.mapnamind.common.util.DateTimeUtil;
 import com.mapnamind.data.dto.ExportRequest;
+import com.mapnamind.data.dto.TopicTreeDTO;
 import com.mapnamind.data.mapper.DataMapper;
 import com.mapnamind.data.mapper.SignalMapper;
+import com.mapnamind.data.service.impl.BaselineService;
 import com.mapnamind.data.service.impl.DataService;
 import com.mapnamind.data.view.SignalSelectorView;
 import com.mapnamind.data.view.SignalView;
@@ -34,6 +36,7 @@ import static com.mapnamind.web.enumeration.Swagger.LANGUAGE;
 @RequiredArgsConstructor
 public class DataController extends Base {
     private final DataService dataService;
+    private final BaselineService baselineService;
     private final ResponseEntityTemplate responseEntityTemplate;
 
     @PostMapping("/signal-selector")
@@ -59,11 +62,14 @@ public class DataController extends Base {
             Duration inputDuration = DateTimeUtil.rondToMinutes(DateTimeUtil.postgresIntervalToDuration(signalView.getInterval()));
             Duration computedDuration = DateTimeUtil.rondToMinutes(Duration.between(DateTimeUtil.toDateTime(view.getStartDate()), DateTimeUtil.toDateTime(view.getEndDate())).dividedBy(signalView.getSampleCount()));
             String effectiveInterval = DateTimeUtil.durationToPostgresInterval(inputDuration.compareTo(computedDuration) > 0 ? inputDuration : computedDuration);
+            TopicTreeDTO topicTreeDTO = dataService.getTopicTree(signalView.getTopic());
             view.addValue(ValueView.builder()
                     .name(signalView.getTopic())
                     .effectiveInterval(effectiveInterval)
                     .data(dataService.aggregate(view.getStartDate(), view.getEndDate(), effectiveInterval, map(SignalMapper.class).targetToSource(signalView))
                             .stream().map(data -> map(DataMapper.class).sourceToTarget(data)).toList())
+                    .unit(topicTreeDTO.getUnit())
+                    .baselineValue(baselineService.getValue(signalView.getUserDeviceId(), topicTreeDTO.getId()))
                     .build());
         }
         return responseEntityTemplate.response("controller.data.signalSelector.successful.200", view);

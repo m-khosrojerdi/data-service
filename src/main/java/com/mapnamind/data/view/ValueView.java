@@ -16,6 +16,7 @@ public class ValueView implements Serializable {
 
     private String name;
     private String effectiveInterval;
+    private String unit;
+    private Double baselineValue;
     private List<DataValue> data;
-
 }

@@ -23,14 +23,13 @@ import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.ZoneId;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import static com.mapnamind.common.util.Constant.*;
+import static com.mapnamind.common.util.StringUtil.isNullOrBlank;
 import static com.mapnamind.data.util.Constant.*;
 
 @Slf4j
@@ -119,14 +118,18 @@ public class DataService implements IDataService {
                                 .time(dateTime[1])
                                 .value(decorateValue(signalDTO.getTopic(), dataProjection.getValue())).build();
                     }).toList();
-            String topicParts[] = signalDTO.getTopic().split(SLASH);
-            TopicTreeDTO topicTreeDTO = topicTreeService.findByPath(topicParts[0] + SLASH +
-                    Arrays.stream(topicParts).skip(2).collect(Collectors.joining(SLASH)));
+            TopicTreeDTO topicTreeDTO = getTopicTree(signalDTO.getTopic());
             String sheetName = StringUtil.keepLeading(StringUtil.get(topicTreeDTO.getDescription()).orElse(topicTreeDTO.getTopic()), 24) +
                     DASH +
-                    StringUtil.keepTrailing(topicParts[1], 6);
-            ExcelUtil.createSheet(workbook, SIGNAL_SELECTOR_EXCEL_COLUMNS, data, sheetName, exportRequest.getIsPersian());
+                    StringUtil.keepTrailing(signalDTO.getTopic().replaceFirst("[^/]+/([^/]+)(?:/[^/]+){2}", "$1"), 6);
+            ExcelUtil.createSheet(workbook, SIGNAL_SELECTOR_EXCEL_COLUMNS.stream()
+                            .map(s -> new ExcelUtil.FieldSet(s.split(COLON)[0], s.split(COLON)[1], s.contains("value") && !isNullOrBlank(topicTreeDTO.getUnit()) ? topicTreeDTO.getUnit() : null)).toList(),
+                    data, sheetName, exportRequest.getIsPersian());
         }
         return workbook;
+    }
+
+    public TopicTreeDTO getTopicTree(String topic) {
+        return topicTreeService.findByPath(topic.replaceFirst("(/[^/]+){2}", "$1"));
     }
 }
