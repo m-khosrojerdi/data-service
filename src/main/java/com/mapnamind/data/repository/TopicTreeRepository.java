@@ -1,6 +1,7 @@
 package com.mapnamind.data.repository;
 
 import com.mapnamind.common.model.entity.TopicTree;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,13 +13,13 @@ import java.util.Optional;
 @Repository
 public interface TopicTreeRepository extends JpaRepository<TopicTree, Long> {
 
-    @Query("SELECT T FROM TopicTree T WHERE topic IN (:TOPICS) AND parent IS NULL")
-    List<TopicTree> findAllByTopicAndParentIsNull(@Param("TOPICS") List<String> topics);
+    @Query("SELECT T FROM TopicTree T WHERE topic IN (:TOPICS) AND parent IS NULL AND T.isVisible = true")
+    List<TopicTree> findAllByTopicAndParentIsNull(@Param("TOPICS") List<String> topics, Sort sort);
 
-    @Query("SELECT T FROM TopicTree T WHERE parent.id IN (:PARENT_IDS) AND path NOT LIKE :ALARM")
-    List<TopicTree> findAllByTopicIsDataAndParent(@Param("PARENT_IDS") List<Long> parentIds, @Param("ALARM") String alarm);
+    @Query("SELECT T FROM TopicTree T WHERE parent.id IN (:PARENT_IDS) AND path NOT LIKE :ALARM AND T.isVisible = true")
+    List<TopicTree> findAllByTopicIsDataAndParent(@Param("PARENT_IDS") List<Long> parentIds, @Param("ALARM") String alarm, Sort sort);
 
-    @Query("SELECT T FROM TopicTree T WHERE parent.id IN :PARENT_ID")
+    @Query("SELECT T FROM TopicTree T WHERE parent.id IN :PARENT_ID AND T.isVisible = true")
     List<TopicTree> findAllByParent(@Param("PARENT_ID") Long parentId);
 
     @Query("SELECT T FROM TopicTree T WHERE parent.id IN " +
@@ -26,8 +27,8 @@ public interface TopicTreeRepository extends JpaRepository<TopicTree, Long> {
     List<TopicTree> findAllByDeviceType(@Param("DEVICE_TYPE_NAME") String deviceTpeName, @Param("ALARM") String alarm);
 
     @Query("SELECT T FROM TopicTree T WHERE (T.parent.topic = :DEVICE_TYPE_NAME OR T.topic = :DEVICE_TYPE_NAME) " +
-            "AND T.path LIKE :HUB")
-    List<TopicTree> findHasHubDeviceTypeTopics(@Param("DEVICE_TYPE_NAME") String deviceTypeName,@Param("HUB") String hubName);
+            "AND T.path LIKE :HUB AND T.isVisible = true")
+    List<TopicTree> findHasHubDeviceTypeTopics(@Param("DEVICE_TYPE_NAME") String deviceTypeName, @Param("HUB") String hubName);
 
     @Query(value = """
             WITH RECURSIVE subtree AS (
@@ -45,7 +46,7 @@ public interface TopicTreeRepository extends JpaRepository<TopicTree, Long> {
 
     List<TopicTree> findAllByParentIsNotNull();
 
-    @Query("SELECT T FROM TopicTree T WHERE T.description LIKE %:DESCRIPTION%")
+    @Query("SELECT T FROM TopicTree T WHERE T.description LIKE %:DESCRIPTION% AND T.isVisible = true")
     List<TopicTree> findByDescription(@Param("DESCRIPTION") String description);
 
     Optional<TopicTree> findByPath(String path);

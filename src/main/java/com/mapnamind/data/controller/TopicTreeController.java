@@ -63,9 +63,7 @@ public class TopicTreeController extends Base {
                                                     @RequestParam(name = "serialNumber", required = false) String serialNumber,
                                                     @RequestParam(name = "description", required = false) String description,
                                                     @RequestParam(name = "company", required = false) Long company) {
-        List<TopicTreeDTO> dto = service.findBySerialOrDescription(
-                deviceName != null ? deviceName.toLowerCase() : deviceName, serialNumber, description, company
-        );
+        List<TopicTreeDTO> dto = service.findBySerialOrDescription(deviceName, serialNumber, description, company);
         List<TopicTreeView> view = map(TopicTreeMapper.class).sourcesToTargets(dto);
         return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200", view);
     }
@@ -87,7 +85,7 @@ public class TopicTreeController extends Base {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)
     })
-    public ResponseBody<TopicTreeView> update(@RequestBody TopicTreeView view){
+    public ResponseBody<TopicTreeView> update(@RequestBody TopicTreeView view) {
         TopicTreeDTO dto = service.updateTopic(map(TopicTreeMapper.class).targetToSource(view));
         TopicTreeView updatedView = map(TopicTreeMapper.class).sourceToTarget(dto);
         return responseEntityTemplate.response("controller.topicTree.updateTopicTree.success.200", updatedView);

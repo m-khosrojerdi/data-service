@@ -18,6 +18,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mapstruct.factory.Mappers;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Type;
@@ -185,12 +186,15 @@ public class TopicTreeService implements ITopicTreeService {
                         device.getDeviceTypeName()
                 )
                 .collect(Collectors.toSet());
-        List<TopicTree> rootTopicTrees = repository.findAllByTopicAndParentIsNull(deviceTypeNames.stream().toList());
+        List<TopicTree> rootTopicTrees = repository.findAllByTopicAndParentIsNull(deviceTypeNames.stream().toList(),
+                Sort.by("topic").ascending()
+        );
         rootTopicTrees.addAll(
                 //find all TopicTrees that have `data` values
                 repository.findAllByTopicIsDataAndParent(
-                        rootTopicTrees.stream().map(TopicTree::getId).toList(), "%alarm%")
-        );
+                        rootTopicTrees.stream().map(TopicTree::getId).toList(), "%alarm%",
+                        Sort.by("description").ascending()
+                ));
         return generateParentTree(Mappers.getMapper(TopicTreeDTOMapper.class).sourcesToTargets(rootTopicTrees), devices, nameDevices);
     }
 
@@ -268,7 +272,8 @@ public class TopicTreeService implements ITopicTreeService {
                 DeviceDTO.builder().ids(deviceIds).build(), USER_ASSET_DTOs
         );
         return deviceName != null ? userAssetDTOS.stream()
-                .filter(dto -> dto.getNickName().contains(deviceName))
+                .filter(dto -> dto.getNickName().contains(deviceName) || dto.getNickName().contains(deviceName.toLowerCase())
+                        || dto.getDeviceTypeName().contains(deviceName) || dto.getDeviceTypeName().contains(deviceName.toLowerCase()))
                 .collect(Collectors.toMap(UserAssetDTO::getSerialNumber, UserAssetDTO::getNickName))
                 :
                 userAssetDTOS.stream().collect(Collectors.toMap(UserAssetDTO::getSerialNumber, UserAssetDTO::getNickName));
