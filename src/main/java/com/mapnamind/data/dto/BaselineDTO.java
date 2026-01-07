@@ -15,5 +15,6 @@ public class BaselineDTO implements Serializable {
     private Long id;
     private Long userDeviceId;
     private Long topicTreeId;
+    private String interval;
     private Double value;
 }

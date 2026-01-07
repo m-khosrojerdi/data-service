@@ -33,9 +33,10 @@ public class BaselineController extends Base {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
     public ResponseBody<BaselineView> get(@RequestParam("userDeviceId") Long userDeviceId,
-                                          @RequestParam("topicTreeId") Long topicTreeId) {
+                                          @RequestParam("topicTreeId") Long topicTreeId,
+                                          @RequestParam("interval") String interval) {
         return responseEntityTemplate.response("controller.baseline.get.successful.200",
-                map(BaselineMapper.class).sourceToTarget(baselineService.get(userDeviceId, topicTreeId)));
+                map(BaselineMapper.class).sourceToTarget(baselineService.get(userDeviceId, topicTreeId, interval)));
     }
 
     @PutMapping
