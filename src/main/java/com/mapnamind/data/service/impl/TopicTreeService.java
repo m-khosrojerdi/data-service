@@ -186,15 +186,11 @@ public class TopicTreeService implements ITopicTreeService {
                         device.getDeviceTypeName()
                 )
                 .collect(Collectors.toSet());
-        List<TopicTree> rootTopicTrees = repository.findAllByTopicAndParentIsNull(deviceTypeNames.stream().toList(),
-                Sort.by("topic").ascending()
-        );
+        Sort sort = Sort.by("description").ascending();
+        List<TopicTree> rootTopicTrees = repository.findAllByTopicAndParentIsNull(deviceTypeNames.stream().toList(), sort);
         rootTopicTrees.addAll(
                 //find all TopicTrees that have `data` values
-                repository.findAllByTopicIsDataAndParent(
-                        rootTopicTrees.stream().map(TopicTree::getId).toList(), "%alarm%",
-                        Sort.by("description").ascending()
-                ));
+                repository.findAllByTopicIsDataAndParent(rootTopicTrees.stream().map(TopicTree::getId).toList(), "%alarm%", sort));
         return generateParentTree(Mappers.getMapper(TopicTreeDTOMapper.class).sourcesToTargets(rootTopicTrees), devices, nameDevices);
     }
 
@@ -272,11 +268,15 @@ public class TopicTreeService implements ITopicTreeService {
                 DeviceDTO.builder().ids(deviceIds).build(), USER_ASSET_DTOs
         );
         return deviceName != null ? userAssetDTOS.stream()
-                .filter(dto -> dto.getNickName().contains(deviceName) || dto.getNickName().contains(deviceName.toLowerCase())
-                        || dto.getDeviceTypeName().contains(deviceName) || dto.getDeviceTypeName().contains(deviceName.toLowerCase()))
+                .filter(dto -> contains(dto.getNickName(), deviceName) || contains(dto.getDeviceTypeName(), deviceName))
                 .collect(Collectors.toMap(UserAssetDTO::getSerialNumber, UserAssetDTO::getNickName))
                 :
                 userAssetDTOS.stream().collect(Collectors.toMap(UserAssetDTO::getSerialNumber, UserAssetDTO::getNickName));
+    }
+
+    private boolean contains(String str1, String str2) {
+        return str1.toLowerCase().contains(str2.toLowerCase()) || str1.toLowerCase().contains(str2) ||
+                str1.contains(str2.toLowerCase());
     }
 
     @Override
