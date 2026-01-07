@@ -259,7 +259,7 @@ public class TopicTreeService implements ITopicTreeService {
                         .ifPresent(parentNode -> parentNode.addChild(row));
             }
         }
-
+        topicTrees.sort(Comparator.comparing(d -> d.getDescription() != null ? d.getDescription() : d.getTopic()));
         return topicTrees;
     }
 
