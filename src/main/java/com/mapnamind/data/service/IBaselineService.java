@@ -8,7 +8,7 @@ public interface IBaselineService {
 
     BaselineDTO save(BaselineDTO dto);
 
-    void delete(Long id);
+    void delete(BaselineDTO dto);
 
     Double getValue(String topic, String interval);
 }

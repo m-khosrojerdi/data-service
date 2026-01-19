@@ -46,7 +46,7 @@ public class BaselineController extends Base {
 
         BaselineDTO dto = switch (view.getValue() == null ? "delete" : "save") {
             case "delete" -> {
-                baselineService.delete(view.getId());
+                baselineService.delete(map(BaselineMapper.class).targetToSource(view));
                 yield BaselineDTO.builder().build();
             }
             default -> baselineService.save(map(BaselineMapper.class).targetToSource(view));
