@@ -27,16 +27,14 @@ public class BaselineController extends Base {
     private final ResponseEntityTemplate responseEntityTemplate;
 
 
-    @GetMapping
+    @PostMapping
     @PreAuthorize((AuthorizeType.CUSTOMER))
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
-    public ResponseBody<BaselineView> get(@RequestParam("userDeviceId") Long userDeviceId,
-                                          @RequestParam("topicTreeId") Long topicTreeId,
-                                          @RequestParam("interval") String interval) {
+    public ResponseBody<BaselineView> get(BaselineView view) {
         return responseEntityTemplate.response("controller.baseline.get.successful.200",
-                map(BaselineMapper.class).sourceToTarget(baselineService.get(userDeviceId, topicTreeId, interval)));
+                map(BaselineMapper.class).sourceToTarget(baselineService.get(view.getTopic(), view.getInterval())));
     }
 
     @PutMapping

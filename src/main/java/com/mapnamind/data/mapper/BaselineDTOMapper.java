@@ -10,16 +10,6 @@ import org.mapstruct.MappingTarget;
 @Mapper
 public interface BaselineDTOMapper extends BaseMapper<Baseline, BaselineDTO> {
 
-    @Override
-    @Mapping(source = "userDevice.id", target = "userDeviceId")
-    @Mapping(source = "topicTree.id", target = "topicTreeId")
-    BaselineDTO sourceToTarget(Baseline source);
-
-    @Override
-    @Mapping(source = "userDeviceId", target = "userDevice.id")
-    @Mapping(source = "topicTreeId", target = "topicTree.id")
-    Baseline targetToSource(BaselineDTO target);
-
     @Mapping(target = "id", ignore = true)
     Baseline updateFromDto(BaselineDTO dto, @MappingTarget Baseline baseline);
 }

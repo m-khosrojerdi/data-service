@@ -24,5 +24,4 @@ public class SignalView implements Serializable {
     private String interval;
     private String aggregation;
     private Integer sampleCount;
-    private Long userDeviceId;
 }

@@ -18,15 +18,15 @@ public class BaselineService implements IBaselineService {
 
     private final BaselineRepository repository;
 
-    public BaselineDTO get(Long userDeviceId, Long topicTreeId, String interval) {
+    public BaselineDTO get(String topic, String interval) {
         return Mappers.getMapper(BaselineDTOMapper.class)
-                .sourceToTarget(repository.findByUserDeviceIdAndTopicTreeIdAndInterval(userDeviceId, topicTreeId, interval)
+                .sourceToTarget(repository.findByTopicAndInterval(topic, interval)
                         .orElseThrow(() -> new ServiceException("service.baseline.notFound.9011")));
     }
 
     public BaselineDTO save(BaselineDTO dto) {
         return Mappers.getMapper(BaselineDTOMapper.class).sourceToTarget(repository.save(
-                repository.findByUserDeviceIdAndTopicTreeIdAndInterval(dto.getUserDeviceId(), dto.getTopicTreeId(), dto.getInterval())
+                repository.findByTopicAndInterval(dto.getTopic(), dto.getInterval())
                         .map(baseline -> Mappers.getMapper(BaselineDTOMapper.class).updateFromDto(dto, baseline))
                         .orElseGet(() -> Mappers.getMapper(BaselineDTOMapper.class).targetToSource(dto))));
     }
@@ -35,8 +35,8 @@ public class BaselineService implements IBaselineService {
         repository.deleteById(id);
     }
 
-    public Double getValue(Long userDeviceId, Long topicTreeId, String interval) {
-        return repository.findByUserDeviceIdAndTopicTreeIdAndInterval(userDeviceId, topicTreeId, interval)
+    public Double getValue(String topic, String interval) {
+        return repository.findByTopicAndInterval(topic, interval)
                 .map(Baseline::getValue)
                 .orElse(null);
     }

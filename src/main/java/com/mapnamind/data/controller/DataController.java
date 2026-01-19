@@ -69,7 +69,7 @@ public class DataController extends Base {
                     .data(dataService.aggregate(view.getStartDate(), view.getEndDate(), effectiveInterval, map(SignalMapper.class).targetToSource(signalView))
                             .stream().map(data -> map(DataMapper.class).sourceToTarget(data)).toList())
                     .unit(topicTreeDTO.getUnit())
-                    .baselineValue(baselineService.getValue(signalView.getUserDeviceId(), topicTreeDTO.getId(), signalView.getInterval()))
+                    .baselineValue(baselineService.getValue(signalView.getTopic(), signalView.getInterval()))
                     .build());
         }
         return responseEntityTemplate.response("controller.data.signalSelector.successful.200", view);

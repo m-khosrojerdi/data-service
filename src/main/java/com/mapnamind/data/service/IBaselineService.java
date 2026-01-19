@@ -4,11 +4,11 @@ import com.mapnamind.data.dto.BaselineDTO;
 
 public interface IBaselineService {
 
-    BaselineDTO get(Long userDeviceId, Long topicTreeId, String interval);
+    BaselineDTO get(String topic, String interval);
 
     BaselineDTO save(BaselineDTO dto);
 
     void delete(Long id);
 
-    Double getValue(Long userDeviceId, Long topicTreeId, String interval);
+    Double getValue(String topic, String interval);
 }
