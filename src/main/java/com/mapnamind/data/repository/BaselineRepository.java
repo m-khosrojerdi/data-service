@@ -9,5 +9,5 @@ import java.util.Optional;
 @Repository
 public interface BaselineRepository extends JpaRepository<Baseline, Long> {
 
-    Optional<Baseline> findByDeviceIdAndTopicTreeIdAndInterval(Long userDeviceId, Long topicTreeId, String interval);
+    Optional<Baseline> findByDeviceIdAndTopicTreeIdAndInterval(Long deviceId, Long topicTreeId, String interval);
 }

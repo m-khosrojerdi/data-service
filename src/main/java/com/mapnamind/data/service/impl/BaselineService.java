@@ -7,6 +7,8 @@ import com.mapnamind.common.model.entity.Baseline;
 import com.mapnamind.common.model.entity.Device;
 import com.mapnamind.data.dto.BaselineDTO;
 import com.mapnamind.data.mapper.BaselineDTOMapper;
+import com.mapnamind.data.mapper.TopicTreeDTOMapper;
+import com.mapnamind.data.mapper.TopicTreeMapper;
 import com.mapnamind.data.repository.BaselineRepository;
 import com.mapnamind.data.service.IBaselineService;
 import com.mapnamind.web.api.ApiService;
@@ -37,7 +39,14 @@ public class BaselineService implements IBaselineService {
         return Mappers.getMapper(BaselineDTOMapper.class).sourceToTarget(repository.save(
                 getBaseline(dto.getTopic(), dto.getInterval())
                         .map(baseline -> Mappers.getMapper(BaselineDTOMapper.class).updateFromDto(dto, baseline))
-                        .orElseGet(() -> Mappers.getMapper(BaselineDTOMapper.class).targetToSource(dto))));
+                        .orElseGet(() -> {
+                            Baseline baseline = Mappers.getMapper(BaselineDTOMapper.class).targetToSource(dto);
+                            Device device = new Device();
+                            device.setId(getDevice(dto.getTopic()).getId());
+                            baseline.setDevice(device);
+                            baseline.setTopicTree(Mappers.getMapper(TopicTreeDTOMapper.class).targetToSource(dataService.getTopicTree(dto.getTopic())));
+                            return baseline;
+                        })));
     }
 
     public void delete(BaselineDTO dto) {
@@ -52,7 +61,7 @@ public class BaselineService implements IBaselineService {
 
     private Optional<Baseline> getBaseline(String topic, String interval) {
         return repository.findByDeviceIdAndTopicTreeIdAndInterval(
-                dataService.getTopicTree(topic).getId(), getDevice(topic).getId(), interval);
+                getDevice(topic).getId(), dataService.getTopicTree(topic).getId(), interval);
     }
 
     private DeviceDTO getDevice(String topic) {
