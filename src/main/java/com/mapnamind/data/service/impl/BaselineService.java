@@ -57,7 +57,7 @@ public class BaselineService implements IBaselineService {
 
     private DeviceDTO getDevice(String topic) {
         return apiService.call(ServiceName.DEVICE_FIND_BY_SERIAL,
-                DeviceDTO.builder().serialNumber(topic.split("/")[1]).build(), new TypeToken<Device>() {
+                DeviceDTO.builder().serialNumber(topic.split("/")[1]).build(), new TypeToken<DeviceDTO>() {
                 }.getType());
     }
 }
