@@ -69,7 +69,7 @@ public class TopicTreeController extends Base {
     }
 
     @GetMapping("/get")
-    @PreAuthorize(AuthorizeType.ADMIN)
+    @PreAuthorize(AuthorizeType.ADMIN_CUSTOMER)
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
