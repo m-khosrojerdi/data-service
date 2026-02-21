@@ -2,11 +2,11 @@ package com.mapnamind.data.controller;
 
 import com.mapnamind.common.util.Constant;
 import com.mapnamind.common.util.Toolbox;
+import com.mapnamind.common.view.topicTree.TopicTreeView;
 import com.mapnamind.data.dto.TopicTreeDTO;
 import com.mapnamind.data.mapper.TopicTreeMapper;
 import com.mapnamind.data.service.ITopicTreeService;
 import com.mapnamind.data.view.DateView;
-import com.mapnamind.data.view.TopicTreeView;
 import com.mapnamind.web.Base;
 import com.mapnamind.web.enumeration.AuthorizeType;
 import com.mapnamind.web.view.ResponseBody;
