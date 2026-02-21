@@ -36,7 +36,5 @@ deploy:
       if [[ "$CI_COMMIT_BRANCH" == "dev" ]]; then
         ssh root@192.168.1.101 "kubectl rollout restart deployment data-service -n development"
       elif [[ "$CI_COMMIT_BRANCH" == "main" ]]; then
-        ssh root@192.168.1.101 "kubectl delete -f MAPNAMIND/data-service.yml"
-        bash /home/gitlab-runner/kub.sh $TAG_LATEST
-        ssh root@192.168.1.101 "kubectl apply -f MAPNAMIND/data-service.yml"
+        ssh root@192.168.1.101 "kubectl rollout restart deployment data-service"
       fi
