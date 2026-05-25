@@ -37,7 +37,7 @@ import static com.mapnamind.data.util.Constant.*;
 @RequiredArgsConstructor
 public class DataService implements IDataService {
 
-    private final FileManagerConfig fileManagerConfig;
+    private final FileManagerTemplate fileManagerTemplate;
     private final WebSocketService webSocketService;
     private final TopicTreeService topicTreeService;
     private final DataRepository dataRepository;
@@ -95,7 +95,7 @@ public class DataService implements IDataService {
         try {
             Workbook workbook = createExcel(exportRequest);
 
-            file = FileManagerTemplate.getInstance(fileManagerConfig).upload(ZipUtil.toZip(ExcelUtil.toBytes(workbook),
+            file = fileManagerTemplate.upload(ZipUtil.toZip(ExcelUtil.toBytes(workbook),
                     SIGNAL_SELECTOR_EXCEL_FILE_NAME), SIGNAL_SELECTOR_EXCEL_ZIP_FILE_NAME);
         } catch (Exception e) {
             webSocketService.sendToUser(exportRequest.getUsername(), e.getMessage());
