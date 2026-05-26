@@ -1,6 +1,7 @@
 package com.mapnamind.data.repository.impl;
 
 import com.mapnamind.common.execption.ServiceException;
+import com.mapnamind.common.util.DateTimeUtil;
 import com.mapnamind.data.dto.OfflineDataDTO;
 import com.mapnamind.data.repository.IOfflineDataRepository;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import javax.sql.DataSource;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.ZoneId;
 import java.util.Date;
 
 import static com.mapnamind.common.util.Toolbox.DATE_FORMAT;
@@ -28,7 +30,9 @@ public class OfflineDataRepository implements IOfflineDataRepository {
             CallableStatement callableStatement = connection.prepareCall(sql);
             callableStatement.setString(1, dto.getTopic());// "p_topic"
             callableStatement.setString(2, dto.getPayload());// "p_value"
-            callableStatement.setString(3, DATE_FORMAT.format(dto.getDate()));// "p_datetime"
+            callableStatement.setString(3, DATE_FORMAT.format(Date.from(DateTimeUtil.toDateTime(dto.getDate())
+                            .atZone(ZoneId.systemDefault()).toInstant()))
+            );// "p_datetime"
 
             callableStatement.execute();
         } catch (SQLException e) {
