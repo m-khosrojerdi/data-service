@@ -26,7 +26,7 @@ public class OfflineDataController extends Base {
     private final IOfflineDataService service;
     private final ResponseEntityTemplate responseEntityTemplate;
 
-    @GetMapping("/publish")
+    @PostMapping("/publish")
     @PreAuthorize(AuthorizeType.ADMIN_CUSTOMER_MANUFACTURE_AGENCY)
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
