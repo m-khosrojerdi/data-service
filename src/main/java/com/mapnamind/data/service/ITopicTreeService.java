@@ -19,4 +19,5 @@ public interface ITopicTreeService {
 
     TopicTreeDTO findByPath(String path);
 
+    TopicTreeDTO findTopicsById(Long id);
 }

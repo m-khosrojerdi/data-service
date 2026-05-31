@@ -11,6 +11,7 @@ import com.mapnamind.web.Base;
 import com.mapnamind.web.enumeration.AuthorizeType;
 import com.mapnamind.web.view.ResponseBody;
 import com.mapnamind.web.view.ResponseEntityTemplate;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import lombok.RequiredArgsConstructor;
@@ -76,6 +77,17 @@ public class TopicTreeController extends Base {
     public ResponseBody<List<TopicTreeView>> getTopics(@RequestParam Long deviceTypeId) {
         List<TopicTreeDTO> dto = service.findTopicsByDeviceType(deviceTypeId);
         List<TopicTreeView> view = map(TopicTreeMapper.class).sourcesToTargets(dto);
+        return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200", view);
+    }
+
+    @Hidden
+    @GetMapping("/get/{id}")
+    @PreAuthorize(AuthorizeType.ADMIN_CUSTOMER_MANUFACTURE_AGENCY)
+    @SecurityRequirements(value = {
+            @SecurityRequirement(name = ACCESS_TOKEN),
+            @SecurityRequirement(name = LANGUAGE)})
+    public ResponseBody<TopicTreeView> getTopic(@PathVariable Long id) {
+        TopicTreeView view = map(TopicTreeMapper.class).sourceToTarget(service.findTopicsById(id));
         return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200", view);
     }
 

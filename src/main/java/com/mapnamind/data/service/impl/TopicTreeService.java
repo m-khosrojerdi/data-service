@@ -284,4 +284,10 @@ public class TopicTreeService implements ITopicTreeService {
         return Mappers.getMapper(TopicTreeDTOMapper.class).sourceToTarget(
                 repository.findByPath(path).orElseThrow(() -> new ServiceException("service.topicTree.notFound.9010")));
     }
+
+    @Override
+    public TopicTreeDTO findTopicsById(Long id){
+        return Mappers.getMapper(TopicTreeDTOMapper.class).sourceToTarget(
+                repository.findById(id).orElseThrow(() -> new ServiceException("service.topicTree.notFound.9010")));
+    }
 }
