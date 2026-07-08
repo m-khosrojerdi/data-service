@@ -4,7 +4,6 @@ import com.mapnamind.common.mapper.topicTree.TopicTreeMapper;
 import com.mapnamind.common.util.Constant;
 import com.mapnamind.common.util.Toolbox;
 import com.mapnamind.common.view.topicTree.TopicTreeView;
-import com.mapnamind.data.dto.TopicTreeDTO;
 import com.mapnamind.data.mapper.TopicTreeViewMapper;
 import com.mapnamind.data.service.ITopicTreeService;
 import com.mapnamind.data.view.DateView;
@@ -40,9 +39,9 @@ public class TopicTreeController extends Base {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
     public ResponseBody<List<TopicTreeView>> rootTree() {
-        List<TopicTreeDTO> dto = service.findParentsTree();
-        List<TopicTreeView> view = map(TopicTreeViewMapper.class).sourcesToTargets(dto);
-        return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200", view);
+        return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200",
+                map(TopicTreeViewMapper.class).sourcesToTargets(service.findParentsTree())
+        );
     }
 
     @GetMapping("/children-tree/{parentId}")
@@ -51,9 +50,9 @@ public class TopicTreeController extends Base {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
     public ResponseBody<List<TopicTreeView>> childrenTree(@PathVariable("parentId") Long parentId) {
-        List<TopicTreeDTO> dto = service.findChildrenTreeFromParent(parentId);
-        List<TopicTreeView> view = map(TopicTreeViewMapper.class).sourcesToTargets(dto);
-        return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200", view);
+        return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200",
+                map(TopicTreeViewMapper.class).sourcesToTargets(service.findChildrenTreeFromParent(parentId))
+        );
     }
 
     @GetMapping("/search")
@@ -65,9 +64,11 @@ public class TopicTreeController extends Base {
                                                     @RequestParam(name = "serialNumber", required = false) String serialNumber,
                                                     @RequestParam(name = "description", required = false) String description,
                                                     @RequestParam(name = "company", required = false) Long company) {
-        List<TopicTreeDTO> dto = service.findBySerialOrDescription(deviceName, serialNumber, description, company);
-        List<TopicTreeView> view = map(TopicTreeViewMapper.class).sourcesToTargets(dto);
-        return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200", view);
+        return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200",
+                map(TopicTreeViewMapper.class).sourcesToTargets(
+                        service.findBySerialOrDescription(deviceName, serialNumber, description, company)
+                )
+        );
     }
 
     @GetMapping("/get")
@@ -76,10 +77,11 @@ public class TopicTreeController extends Base {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
     public ResponseBody<List<TopicTreeView>> getTopics(@RequestParam Long deviceTypeId) {
-        List<TopicTreeView> view = map(TopicTreeMapper.class).sourcesToTargets(
-                service.findTopicsByDeviceType(deviceTypeId)
+        return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200",
+                map(TopicTreeMapper.class).sourcesToTargets(
+                        service.findTopicsByDeviceType(deviceTypeId)
+                )
         );
-        return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200", view);
     }
 
     @Hidden
@@ -89,8 +91,9 @@ public class TopicTreeController extends Base {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
     public ResponseBody<TopicTreeView> getTopic(@PathVariable Long id) {
-        TopicTreeView view = map(TopicTreeMapper.class).sourceToTarget(service.findTopicsById(id));
-        return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200", view);
+        return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200",
+                map(TopicTreeMapper.class).sourceToTarget(service.findTopicsById(id))
+        );
     }
 
     @PutMapping("/update")
@@ -100,10 +103,11 @@ public class TopicTreeController extends Base {
             @SecurityRequirement(name = LANGUAGE)
     })
     public ResponseBody<TopicTreeView> update(@RequestBody TopicTreeView view) {
-        TopicTreeView updatedView = map(TopicTreeMapper.class).sourceToTarget(
-                service.update(map(TopicTreeMapper.class).targetToSource(view))
+        return responseEntityTemplate.response("controller.topicTree.updateTopicTree.success.200",
+                map(TopicTreeMapper.class).sourceToTarget(
+                        service.update(map(TopicTreeMapper.class).targetToSource(view))
+                )
         );
-        return responseEntityTemplate.response("controller.topicTree.updateTopicTree.success.200", updatedView);
 
     }
 

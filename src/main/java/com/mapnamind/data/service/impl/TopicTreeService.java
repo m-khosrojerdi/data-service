@@ -79,7 +79,7 @@ public class TopicTreeService implements ITopicTreeService {
         if (topicTree.getId() == null) {
             throw new ServiceException("service.topicTree.update.idIsNull.9007");
         }
-        TopicTree entity = repository.findById(topicTree.getId()).orElseThrow(
+        var entity = repository.findById(topicTree.getId()).orElseThrow(
                 () -> new ServiceException("service.topicTree.update.notFound.9008")
         );
         if (!entity.getTopic().equals(topicTree.getTopic())) {
@@ -87,7 +87,7 @@ public class TopicTreeService implements ITopicTreeService {
         }
         entity.setDescription(topicTree.getDescription());
         if (!topicTree.getIsVisible().equals(entity.getIsVisible())) {
-            List<TopicTree> children = repository.findAllByParent(entity.getId());
+            var children = repository.findAllByParent(entity.getId());
             children.forEach(child -> child.setIsVisible(topicTree.getIsVisible()));
             repository.saveAll(children);
             entity.setIsVisible(topicTree.getIsVisible());
@@ -98,12 +98,11 @@ public class TopicTreeService implements ITopicTreeService {
         } catch (Exception e) {
             throw new ServiceException("service.topicTree.update.databaseError.9012");
         }
-
     }
 
     @Override
     public List<TopicTreeDTO> findChildrenTreeFromParent(Long parentId) {
-        List<TopicTree> entities = repository.findAllByParent(parentId);
+        var entities = repository.findAllByParent(parentId);
         return Mappers.getMapper(TopicTreeDTOMapper.class).sourcesToTargets(entities)
                 .stream().peek(dto -> dto.setCode(dto.getId())).toList();
     }
@@ -134,7 +133,7 @@ public class TopicTreeService implements ITopicTreeService {
         if (serialNumber == null && deviceName == null && description == null) {
             return findTopicTrees(devices, getDevicesName(devices.stream().map(DeviceView::getId).toList(), null));
         } else if (serialNumber != null && !serialNumber.isEmpty()) {
-            List<DeviceView> searchDevices = devices.stream().filter(device ->
+            var searchDevices = devices.stream().filter(device ->
                     device.getSerialNumber().contains(serialNumber)
             ).toList();
             if (searchDevices.isEmpty()) {
@@ -143,24 +142,24 @@ public class TopicTreeService implements ITopicTreeService {
             return findTopicTrees(searchDevices, getDevicesName(devices.stream().map(DeviceView::getId).toList(), null));
 
         } else if (deviceName != null && !deviceName.isEmpty()) {
-            Map<String, String> getAllDeviceNames = getDevicesName(devices.stream().map(DeviceView::getId).toList(), deviceName);
-            List<DeviceView> searchDevices = devices.stream().filter(device ->
+            var getAllDeviceNames = getDevicesName(devices.stream().map(DeviceView::getId).toList(), deviceName);
+            var searchDevices = devices.stream().filter(device ->
                     getAllDeviceNames.containsKey(device.getSerialNumber())
             ).toList();
 
             return findTopicTrees(searchDevices, getAllDeviceNames);
         } else if (description != null && !description.isEmpty()) {
-            List<TopicTree> entities = repository.findByDescription(description);
-            List<String> deviceTypeNames = devices.stream().map(DeviceView::getDeviceTypeName).toList();
-            List<TopicTree> finalTopicTrees = new ArrayList<>();
-            for (TopicTree entity : entities) {
+            var entities = repository.findByDescription(description);
+            var deviceTypeNames = devices.stream().map(DeviceView::getDeviceTypeName).toList();
+            var finalTopicTrees = new ArrayList<TopicTree>();
+            for (var entity : entities) {
                 if (deviceTypeNames.contains(entity.getPath().split(SLASH)[0])) {
                     finalTopicTrees.add(entity);
                     findAllParentsOfThisTopic(entity.getParent(), finalTopicTrees); // Use finalTopicTrees instead of entities
                 }
 
             }
-            List<TopicTreeDTO> dto = generateParentTree(
+            var dto = generateParentTree(
                     Mappers.getMapper(TopicTreeDTOMapper.class).sourcesToTargets(finalTopicTrees), devices,
                     getDevicesName(devices.stream().map(DeviceView::getId).toList(), null)
             );
@@ -171,7 +170,7 @@ public class TopicTreeService implements ITopicTreeService {
     }
 
     private void findAllParentsOfThisTopic(TopicTree parent, List<TopicTree> rootTopicTrees) {
-        Optional<TopicTree> entity = repository.findById(parent.getId());
+        var entity = repository.findById(parent.getId());
         if (entity.isEmpty()) {
             return;
         }
@@ -184,14 +183,14 @@ public class TopicTreeService implements ITopicTreeService {
     }
 
     private List<TopicTreeDTO> findTopicTrees(List<DeviceView> devices, Map<String, String> nameDevices) {
-        Set<String> deviceTypeNames = devices.stream()
+        var deviceTypeNames = devices.stream()
                 .map(device -> device.getHubDeviceTypeName() != null ?
                         device.getHubDeviceTypeName() :
                         device.getDeviceTypeName()
                 )
                 .collect(Collectors.toSet());
-        Sort sort = Sort.by("description").ascending();
-        List<TopicTree> rootTopicTrees = repository.findAllByTopicAndParentIsNull(deviceTypeNames.stream().toList(), sort);
+        var sort = Sort.by("description").ascending();
+        var rootTopicTrees = repository.findAllByTopicAndParentIsNull(deviceTypeNames.stream().toList(), sort);
         rootTopicTrees.addAll(
                 //find all TopicTrees that have `data` values
                 repository.findAllByTopicIsDataAndParent(rootTopicTrees.stream().map(TopicTree::getId).toList(), "%alarm%", sort));
@@ -200,7 +199,7 @@ public class TopicTreeService implements ITopicTreeService {
 
     private List<TopicTreeDTO> generateParentTree(List<TopicTreeDTO> dtos, List<DeviceView> deviceViews, Map<String, String> nameDevices) {
         // Step 1: Create a map of ID to TreeNode (optimized to avoid parsing String -> Long multiple times)
-        Map<Long, TopicTreeDTO> nodes = dtos.stream()
+        var nodes = dtos.stream()
                 .collect(Collectors.toMap(
                                 TopicTreeDTO::getId,
                                 row -> row
@@ -208,35 +207,36 @@ public class TopicTreeService implements ITopicTreeService {
                 );
         dtos.clear();
 
-        List<TopicTreeDTO> topicTreesThatAreData = nodes.values().stream()
+        var topicTreesThatAreData = nodes.values().stream()
                 .filter(node -> "data".equals(node.getTopic()))
                 .toList();
 
-        long countId = nodes.keySet().stream()
+        var countId = nodes.keySet().stream()
                 .max(Long::compareTo)
                 .orElse(1000L) + 1;
 
-        for (DeviceView device : deviceViews) {
-            Long id = countId++;
-            Long cloneId = countId++;
+        for (var device : deviceViews) {
+            var id = countId++;
+            var cloneId = countId++;
 
             // Initialize serial TopicTree node
-            TopicTreeDTO serialNode = TopicTreeDTO.builder()
+            var serialNode = TopicTreeDTO.builder()
                     .id(id)
                     .topic(device.getSerialNumber())
                     .deviceName(nameDevices.get(device.getSerialNumber()))
                     .isProperty(0)
+                    .hasChildren(true)
                     .build();
 
             // Find the corresponding data node using a more efficient method
-            Optional<TopicTreeDTO> foundDataNode = topicTreesThatAreData.stream()
+            var foundDataNode = topicTreesThatAreData.stream()
                     .filter(node -> node.getPath().contains(device.getDeviceTypeName() + SLASH) ||
                             node.getPath().contains(device.getHubDeviceTypeName() + SLASH))
                     .findFirst();
 
             foundDataNode.ifPresent(dataNode -> {
-                TopicTreeDTO cloneDataNode = dataNode.clone();
-                Long rootId = cloneDataNode.getParentId();
+                var cloneDataNode = dataNode.clone();
+                var rootId = cloneDataNode.getParentId();
 
                 cloneDataNode.setCode(cloneDataNode.getId());
                 cloneDataNode.setId(cloneId);
@@ -251,9 +251,9 @@ public class TopicTreeService implements ITopicTreeService {
         }
         topicTreesThatAreData.forEach(node -> nodes.remove(node.getId()));
 
-        List<TopicTreeDTO> topicTrees = new ArrayList<>();
-        for (TopicTreeDTO row : nodes.values()) {
-            Long parentId = row.getParentId();
+        var topicTrees = new ArrayList<TopicTreeDTO>();
+        for (var row : nodes.values()) {
+            var parentId = row.getParentId();
 
             if (parentId == null) {
                 topicTrees.add(row); // Directly add to root if topic matches
@@ -289,7 +289,7 @@ public class TopicTreeService implements ITopicTreeService {
     }
 
     @Override
-    public TopicTree findTopicsById(Long id){
+    public TopicTree findTopicsById(Long id) {
         return repository.findById(id).orElseThrow(() -> new ServiceException("service.topicTree.notFound.9010"));
     }
 }
