@@ -17,6 +17,9 @@ public class SignalView implements Serializable {
     @NotBlank
     private String topic;
 
+    private String serial;
+    private String param;
+
     @NotNull
     @Pattern(regexp = "0|1", message = "view.data.property.notValidIsProperty")
     private String isProperty;

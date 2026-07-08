@@ -15,6 +15,8 @@ import java.util.List;
 public class ValueView implements Serializable {
 
     private String name;
+    private String serial;
+    private String param;
     private String effectiveInterval;
     private String unit;
     private Double baselineValue;

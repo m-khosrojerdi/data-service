@@ -47,8 +47,9 @@ public class DataService implements IDataService {
     private final JmsTemplate jmsTemplate;
     private final Gson gson;
 
-    public List<DataProjectionDTO> aggregate(String startDate, String endDate, String effectiveInterval, SignalDTO signalDTO) {
+    public List<DataProjectionDTO> aggregate(String topic, String startDate, String endDate, String effectiveInterval, SignalDTO signalDTO) {
         try {
+            signalDTO.setTopic(topic);
             resolveProperty(signalDTO);
             return (dataRepository.aggregate(signalDTO.getTopic(), startDate, endDate, signalDTO.getIsProperty(),
                     effectiveInterval,

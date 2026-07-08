@@ -1,9 +1,10 @@
 package com.mapnamind.data.controller;
 
+import com.google.gson.reflect.TypeToken;
+import com.mapnamind.common.dto.device.DeviceDTO;
 import com.mapnamind.common.model.entity.TopicTree;
 import com.mapnamind.common.util.DateTimeUtil;
 import com.mapnamind.data.dto.ExportRequest;
-import com.mapnamind.data.dto.TopicTreeDTO;
 import com.mapnamind.data.mapper.DataMapper;
 import com.mapnamind.data.mapper.SignalMapper;
 import com.mapnamind.data.service.impl.BaselineService;
@@ -12,7 +13,9 @@ import com.mapnamind.data.view.SignalSelectorView;
 import com.mapnamind.data.view.SignalView;
 import com.mapnamind.data.view.ValueView;
 import com.mapnamind.web.Base;
+import com.mapnamind.web.api.ApiService;
 import com.mapnamind.web.enumeration.AuthorizeType;
+import com.mapnamind.web.enumeration.ServiceName;
 import com.mapnamind.web.view.ResponseBody;
 import com.mapnamind.web.view.ResponseEntityTemplate;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -26,6 +29,9 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.mapnamind.common.util.Constant.*;
 import static com.mapnamind.web.enumeration.Swagger.ACCESS_TOKEN;
@@ -36,6 +42,7 @@ import static com.mapnamind.web.enumeration.Swagger.LANGUAGE;
 @RequestMapping("/data")
 @RequiredArgsConstructor
 public class DataController extends Base {
+    private final ApiService apiService;
     private final DataService dataService;
     private final BaselineService baselineService;
     private final ResponseEntityTemplate responseEntityTemplate;
@@ -43,8 +50,8 @@ public class DataController extends Base {
     @PostMapping("/signal-selector")
     @PreAuthorize(AuthorizeType.CUSTOMER)
     @SecurityRequirements(value = {
-            @SecurityRequirement(name = ACCESS_TOKEN),
-            @SecurityRequirement(name = LANGUAGE)})
+        @SecurityRequirement(name = ACCESS_TOKEN),
+        @SecurityRequirement(name = LANGUAGE)})
     public ResponseBody<?> signalSelector(@Valid @RequestBody SignalSelectorView view) {
 
         List<SignalView> signalViews;
@@ -63,29 +70,42 @@ public class DataController extends Base {
             Duration inputDuration = DateTimeUtil.rondToMinutes(DateTimeUtil.postgresIntervalToDuration(signalView.getInterval()));
             Duration computedDuration = DateTimeUtil.rondToMinutes(Duration.between(DateTimeUtil.toDateTime(view.getStartDate()), DateTimeUtil.toDateTime(view.getEndDate())).dividedBy(signalView.getSampleCount()));
             String effectiveInterval = DateTimeUtil.durationToPostgresInterval(inputDuration.compareTo(computedDuration) > 0 ? inputDuration : computedDuration);
-            TopicTree topicTree = dataService.getTopicTree(signalView.getTopic());
+            String topic = getTopic(signalView.getTopic(), signalView.getParam(), signalView.getSerial());
+            TopicTree topicTree = dataService.getTopicTree(topic);
             view.addValue(ValueView.builder()
-                    .name(signalView.getTopic())
-                    .effectiveInterval(effectiveInterval)
-                    .data(dataService.aggregate(view.getStartDate(), view.getEndDate(), effectiveInterval, map(SignalMapper.class).targetToSource(signalView))
-                            .stream().map(data -> map(DataMapper.class).sourceToTarget(data)).toList())
-                    .unit(topicTree.getUnit())
-                    .baselineValue(baselineService.getValue(signalView.getTopic(), signalView.getInterval()))
-                    .build());
+                .name(signalView.getTopic())
+                .effectiveInterval(effectiveInterval)
+                .data(dataService.aggregate(topic, view.getStartDate(), view.getEndDate(), effectiveInterval, map(SignalMapper.class).targetToSource(signalView))
+                    .stream().map(data -> map(DataMapper.class).sourceToTarget(data)).toList())
+                .unit(topicTree.getUnit())
+                .baselineValue(baselineService.getValue(topic, signalView.getInterval()))
+                .param(signalView.getParam())
+                .serial(signalView.getSerial())
+                .build());
         }
         return responseEntityTemplate.response("controller.data.signalSelector.successful.200", view);
+    }
+
+    private String getTopic(String topic, String param, String serial) {
+        return Optional.ofNullable(topic).orElseGet(() -> {
+            DeviceDTO deviceDTO = apiService.call(ServiceName.DEVICE_FIND_BY_SERIAL,
+                DeviceDTO.builder().serialNumber(serial).build(), new TypeToken<DeviceDTO>() {
+                }.getType());
+
+            return Stream.of(deviceDTO.getDeviceTypeName(), serial, "data", param).collect(Collectors.joining("/"));
+        });
     }
 
     @PostMapping("/signal-selector/export")
     @PreAuthorize(AuthorizeType.CUSTOMER)
     @SecurityRequirements(value = {
-            @SecurityRequirement(name = ACCESS_TOKEN),
-            @SecurityRequirement(name = LANGUAGE)})
+        @SecurityRequirement(name = ACCESS_TOKEN),
+        @SecurityRequirement(name = LANGUAGE)})
     public ResponseBody<SignalSelectorView> signalSelectorExport(@Valid @RequestBody SignalSelectorView view) {
 
         view.setExportUuid(dataService.export(ExportRequest.builder().startDate(view.getStartDate())
-                .endDate(view.getEndDate()).signalDTOs(map(SignalMapper.class).targetsToSources(view.getSignals()))
-                .isPersian(LocaleContextHolder.getLocale().equals(FA_LOCALE)).build()));
+            .endDate(view.getEndDate()).signalDTOs(map(SignalMapper.class).targetsToSources(view.getSignals()))
+            .isPersian(LocaleContextHolder.getLocale().equals(FA_LOCALE)).build()));
 
         return responseEntityTemplate.response("controller.data.export.successful.200", view);
     }

@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface IDataService {
 
-    List<DataProjectionDTO> aggregate(String startDate, String endDate, String effectiveInterval, SignalDTO signalDTO);
+    List<DataProjectionDTO> aggregate(String topic, String startDate, String endDate, String effectiveInterval, SignalDTO signalDTO);
 
     String export(ExportRequest exportRequestDTO);
 
