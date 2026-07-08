@@ -7,7 +7,6 @@ import com.mapnamind.common.model.entity.Baseline;
 import com.mapnamind.common.model.entity.Device;
 import com.mapnamind.data.dto.BaselineDTO;
 import com.mapnamind.data.mapper.BaselineDTOMapper;
-import com.mapnamind.data.mapper.TopicTreeDTOMapper;
 import com.mapnamind.data.repository.BaselineRepository;
 import com.mapnamind.data.service.IBaselineService;
 import com.mapnamind.web.api.ApiService;
@@ -18,7 +17,6 @@ import org.mapstruct.factory.Mappers;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
 
@@ -48,7 +46,7 @@ public class BaselineService implements IBaselineService {
                             Device device = new Device();
                             device.setId(getDevice(dto.getTopic()).getId());
                             baseline.setDevice(device);
-                            baseline.setTopicTree(Mappers.getMapper(TopicTreeDTOMapper.class).targetToSource(dataService.getTopicTree(dto.getTopic())));
+                            baseline.setTopicTree(dataService.getTopicTree(dto.getTopic()));
                             return baseline;
                         })));
     }
@@ -70,7 +68,7 @@ public class BaselineService implements IBaselineService {
 
     private DeviceDTO getDevice(String topic) {
         return apiService.call(ServiceName.DEVICE_FIND_BY_SERIAL, HttpMethod.GET, null,
-                Collections.singletonList(topic.split(SLASH)[1]), null,  new TypeToken<DeviceDTO>() {
+                Collections.singletonList(topic.split(SLASH)[1]), null, new TypeToken<DeviceDTO>() {
                 }.getType());
     }
 }

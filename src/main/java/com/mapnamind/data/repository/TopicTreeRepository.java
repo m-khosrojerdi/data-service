@@ -13,21 +13,24 @@ import java.util.Optional;
 @Repository
 public interface TopicTreeRepository extends JpaRepository<TopicTree, Long> {
 
-    @Query("SELECT T FROM TopicTree T WHERE topic IN (:TOPICS) AND parent IS NULL AND T.isVisible = true")
+    @Query("SELECT new TopicTree(T, (SELECT COUNT(c) > 0 FROM TopicTree c WHERE c.parent = T)) FROM TopicTree T " +
+            "WHERE topic IN (:TOPICS) AND parent IS NULL AND T.isVisible = true")
     List<TopicTree> findAllByTopicAndParentIsNull(@Param("TOPICS") List<String> topics, Sort sort);
 
-    @Query("SELECT T FROM TopicTree T WHERE parent.id IN (:PARENT_IDS) AND path NOT LIKE :ALARM AND T.isVisible = true")
+    @Query("SELECT new TopicTree(T, (SELECT COUNT(c) > 0 FROM TopicTree c WHERE c.parent = T)) FROM TopicTree T " +
+            "WHERE parent.id IN (:PARENT_IDS) AND path NOT LIKE :ALARM AND T.isVisible = true")
     List<TopicTree> findAllByTopicIsDataAndParent(@Param("PARENT_IDS") List<Long> parentIds, @Param("ALARM") String alarm, Sort sort);
 
-    @Query("SELECT T FROM TopicTree T WHERE parent.id IN :PARENT_ID AND T.isVisible = true")
+    @Query("SELECT new TopicTree(T, (SELECT COUNT(c) > 0 FROM TopicTree c WHERE c.parent = T)) FROM TopicTree T " +
+            "WHERE parent.id IN :PARENT_ID AND T.isVisible = true")
     List<TopicTree> findAllByParent(@Param("PARENT_ID") Long parentId);
 
-    @Query("SELECT T FROM TopicTree T WHERE parent.id IN " +
+    @Query("SELECT new TopicTree(T, (SELECT COUNT(c) > 0 FROM TopicTree c WHERE c.parent = T)) FROM TopicTree T WHERE parent.id IN " +
             "( SELECT TT.id FROM TopicTree TT WHERE parent.topic = :DEVICE_TYPE_NAME AND path NOT LIKE :ALARM )")
     List<TopicTree> findAllByDeviceType(@Param("DEVICE_TYPE_NAME") String deviceTpeName, @Param("ALARM") String alarm);
 
-    @Query("SELECT T FROM TopicTree T WHERE (T.parent.topic = :DEVICE_TYPE_NAME OR T.topic = :DEVICE_TYPE_NAME) " +
-            "AND T.path LIKE :HUB AND T.isVisible = true")
+    @Query("SELECT new TopicTree(T, (SELECT COUNT(c) > 0 FROM TopicTree c WHERE c.parent = T)) FROM TopicTree T " +
+            "WHERE (T.parent.topic = :DEVICE_TYPE_NAME OR T.topic = :DEVICE_TYPE_NAME) AND T.path LIKE :HUB AND T.isVisible = true")
     List<TopicTree> findHasHubDeviceTypeTopics(@Param("DEVICE_TYPE_NAME") String deviceTypeName, @Param("HUB") String hubName);
 
     @Query(value = """
@@ -46,7 +49,8 @@ public interface TopicTreeRepository extends JpaRepository<TopicTree, Long> {
 
     List<TopicTree> findAllByParentIsNotNull();
 
-    @Query("SELECT T FROM TopicTree T WHERE T.description LIKE %:DESCRIPTION% AND T.isVisible = true")
+    @Query("SELECT new TopicTree(T, (SELECT COUNT(c) > 0 FROM TopicTree c WHERE c.parent = T)) FROM TopicTree T " +
+            "WHERE T.description LIKE %:DESCRIPTION% AND T.isVisible = true")
     List<TopicTree> findByDescription(@Param("DESCRIPTION") String description);
 
     Optional<TopicTree> findByPath(String path);

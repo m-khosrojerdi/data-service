@@ -6,5 +6,5 @@ import com.mapnamind.data.dto.TopicTreeDTO;
 import org.mapstruct.Mapper;
 
 @Mapper
-public interface TopicTreeMapper extends BaseMapper<TopicTreeDTO, TopicTreeView> {
+public interface TopicTreeViewMapper extends BaseMapper<TopicTreeDTO, TopicTreeView> {
 }

@@ -32,6 +32,7 @@ public class TopicTreeDTO implements Serializable, Cloneable {
     private Boolean isVisible;
     private String unit;
     private List<TopicTreeDTO> children;
+    private Boolean hasChildren;
 
     public List<TopicTreeDTO> getChildren() {
         if (children == null) {

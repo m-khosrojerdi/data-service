@@ -50,7 +50,7 @@ public class TopicTreeService implements ITopicTreeService {
     }
 
     @Override
-    public List<TopicTreeDTO> findTopicsByDeviceType(Long deviceTypeId) {
+    public List<TopicTree> findTopicsByDeviceType(Long deviceTypeId) {
 
         DeviceTypeView deviceType = apiService.call(ServiceName.DEVICE_TYPE_FIND_BY_ID, null,
                 List.of(deviceTypeId.toString()), null,
@@ -70,30 +70,34 @@ public class TopicTreeService implements ITopicTreeService {
         } else {
             topics = repository.findLeafTopics(deviceType.getName());
         }
-        return Mappers.getMapper(TopicTreeDTOMapper.class).sourcesToTargets(topics);
+        return topics;
     }
 
     @Override
-    public TopicTreeDTO updateTopic(TopicTreeDTO dto) {
+    public TopicTree update(TopicTree topicTree) {
 
-        if (dto.getId() == null) {
-            throw new ServiceException("service.topicTree.common.idIsNull.9008");
+        if (topicTree.getId() == null) {
+            throw new ServiceException("service.topicTree.update.idIsNull.9007");
         }
-        TopicTree entity = repository.findById(dto.getId()).orElseThrow(
-                () -> new ServiceException("service.topicTree.common.notFound.9009")
+        TopicTree entity = repository.findById(topicTree.getId()).orElseThrow(
+                () -> new ServiceException("service.topicTree.update.notFound.9008")
         );
-        if (!entity.getTopic().equals(dto.getTopic())) {
-            throw new ServiceException("service.topicTree.common.topicCantEdit.9010");
+        if (!entity.getTopic().equals(topicTree.getTopic())) {
+            throw new ServiceException("service.topicTree.update.notFoundTopic.9009");
         }
-        entity.setDescription(dto.getDescription());
-        if (!dto.getIsVisible().equals(entity.getIsVisible())) {
+        entity.setDescription(topicTree.getDescription());
+        if (!topicTree.getIsVisible().equals(entity.getIsVisible())) {
             List<TopicTree> children = repository.findAllByParent(entity.getId());
-            children.forEach(child -> child.setIsVisible(dto.getIsVisible()));
+            children.forEach(child -> child.setIsVisible(topicTree.getIsVisible()));
             repository.saveAll(children);
-            entity.setIsVisible(dto.getIsVisible());
+            entity.setIsVisible(topicTree.getIsVisible());
         }
-        entity.setUnit(dto.getUnit());
-        return Mappers.getMapper(TopicTreeDTOMapper.class).sourceToTarget(repository.save(entity));
+        entity.setUnit(topicTree.getUnit());
+        try {
+            return repository.save(entity);
+        } catch (Exception e) {
+            throw new ServiceException("service.topicTree.update.databaseError.9012");
+        }
 
     }
 
@@ -280,9 +284,8 @@ public class TopicTreeService implements ITopicTreeService {
     }
 
     @Override
-    public TopicTreeDTO findByPath(String path) {
-        return Mappers.getMapper(TopicTreeDTOMapper.class).sourceToTarget(
-                repository.findByPath(path).orElseThrow(() -> new ServiceException("service.topicTree.notFound.9010")));
+    public TopicTree findByPath(String path) {
+        return repository.findByPath(path).orElseThrow(() -> new ServiceException("service.topicTree.notFound.9010"));
     }
 
     @Override

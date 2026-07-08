@@ -2,13 +2,16 @@ package com.mapnamind.data.service.impl;
 
 import com.google.gson.Gson;
 import com.mapnamind.common.execption.ServiceException;
-import com.mapnamind.common.file.FileManagerConfig;
+import com.mapnamind.common.model.entity.TopicTree;
 import com.mapnamind.common.payload.file.FileManagerResponse;
 import com.mapnamind.common.util.DateTimeUtil;
 import com.mapnamind.common.util.ExcelUtil;
 import com.mapnamind.common.util.StringUtil;
 import com.mapnamind.common.util.ZipUtil;
-import com.mapnamind.data.dto.*;
+import com.mapnamind.data.dto.DataProjectionDTO;
+import com.mapnamind.data.dto.ExportDataProjectionDTO;
+import com.mapnamind.data.dto.ExportRequest;
+import com.mapnamind.data.dto.SignalDTO;
 import com.mapnamind.data.repository.DataRepository;
 import com.mapnamind.data.service.IDataService;
 import com.mapnamind.data.service.WebSocketService;
@@ -118,18 +121,18 @@ public class DataService implements IDataService {
                                 .time(dateTime[1])
                                 .value(decorateValue(signalDTO.getTopic(), dataProjection.getValue())).build();
                     }).toList();
-            TopicTreeDTO topicTreeDTO = getTopicTree(signalDTO.getTopic());
-            String sheetName = StringUtil.keepLeading(StringUtil.get(topicTreeDTO.getDescription()).orElse(topicTreeDTO.getTopic()), 24) +
+            TopicTree topicTree = getTopicTree(signalDTO.getTopic());
+            String sheetName = StringUtil.keepLeading(StringUtil.get(topicTree.getDescription()).orElse(topicTree.getTopic()), 24) +
                     DASH +
                     StringUtil.keepTrailing(signalDTO.getTopic().replaceFirst("[^/]+/([^/]+)(?:/[^/]+){2}", "$1"), 6);
             ExcelUtil.createSheet(workbook, SIGNAL_SELECTOR_EXCEL_COLUMNS.stream()
-                            .map(s -> new ExcelUtil.FieldSet(s.split(COLON)[0], s.split(COLON)[1], s.contains("value") && !isNullOrBlank(topicTreeDTO.getUnit()) ? topicTreeDTO.getUnit() : null)).toList(),
+                            .map(s -> new ExcelUtil.FieldSet(s.split(COLON)[0], s.split(COLON)[1], s.contains("value") && !isNullOrBlank(topicTree.getUnit()) ? topicTree.getUnit() : null)).toList(),
                     data, sheetName, exportRequest.getIsPersian());
         }
         return workbook;
     }
 
-    public TopicTreeDTO getTopicTree(String topic) {
+    public TopicTree getTopicTree(String topic) {
         return topicTreeService.findByPath(topic.replaceFirst("(/[^/]+){2}", "$1"));
     }
 }
