@@ -4,6 +4,7 @@ import com.google.gson.reflect.TypeToken;
 import com.mapnamind.common.dto.device.DeviceDTO;
 import com.mapnamind.common.model.entity.TopicTree;
 import com.mapnamind.common.util.DateTimeUtil;
+import com.mapnamind.common.view.device.DeviceView;
 import com.mapnamind.data.dto.ExportRequest;
 import com.mapnamind.data.mapper.DataMapper;
 import com.mapnamind.data.mapper.SignalMapper;
@@ -23,6 +24,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -88,11 +90,13 @@ public class DataController extends Base {
 
     private String getTopic(String topic, String param, String serial) {
         return Optional.ofNullable(topic).orElseGet(() -> {
-            DeviceDTO deviceDTO = apiService.call(ServiceName.DEVICE_FIND_BY_SERIAL,
-                DeviceDTO.builder().serialNumber(serial).build(), new TypeToken<DeviceDTO>() {
+
+            DeviceView deviceView = apiService.call(ServiceName.DEVICE_FIND_BY_SERIAL, HttpMethod.GET, null,
+                List.of(serial), null,
+                new TypeToken<DeviceView>() {
                 }.getType());
 
-            return Stream.of(deviceDTO.getDeviceTypeName(), serial, "data", param).collect(Collectors.joining("/"));
+            return Stream.of(deviceView.getDeviceTypeName(), serial, "data", param).collect(Collectors.joining("/"));
         });
     }
 
