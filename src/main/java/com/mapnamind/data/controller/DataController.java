@@ -1,7 +1,6 @@
 package com.mapnamind.data.controller;
 
 import com.google.gson.reflect.TypeToken;
-import com.mapnamind.common.dto.device.DeviceDTO;
 import com.mapnamind.common.model.entity.TopicTree;
 import com.mapnamind.common.util.DateTimeUtil;
 import com.mapnamind.common.view.device.DeviceView;
@@ -17,6 +16,7 @@ import com.mapnamind.web.Base;
 import com.mapnamind.web.api.ApiService;
 import com.mapnamind.web.enumeration.AuthorizeType;
 import com.mapnamind.web.enumeration.ServiceName;
+import com.mapnamind.web.util.HttpRequest;
 import com.mapnamind.web.view.ResponseBody;
 import com.mapnamind.web.view.ResponseEntityTemplate;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -31,7 +31,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -49,7 +48,7 @@ public class DataController extends Base {
     private final BaselineService baselineService;
     private final ResponseEntityTemplate responseEntityTemplate;
 
-    @PostMapping("/signal-selector")
+    @PostMapping({"/signal-selector", "get-data"})
     @PreAuthorize(AuthorizeType.CUSTOMER)
     @SecurityRequirements(value = {
         @SecurityRequirement(name = ACCESS_TOKEN),
@@ -72,7 +71,7 @@ public class DataController extends Base {
             Duration inputDuration = DateTimeUtil.rondToMinutes(DateTimeUtil.postgresIntervalToDuration(signalView.getInterval()));
             Duration computedDuration = DateTimeUtil.rondToMinutes(Duration.between(DateTimeUtil.toDateTime(view.getStartDate()), DateTimeUtil.toDateTime(view.getEndDate())).dividedBy(signalView.getSampleCount()));
             String effectiveInterval = DateTimeUtil.durationToPostgresInterval(inputDuration.compareTo(computedDuration) > 0 ? inputDuration : computedDuration);
-            String topic = getTopic(signalView.getTopic(), signalView.getParam(), signalView.getSerial());
+            String topic = HttpRequest.getUri().endsWith("get-data") ? getTopic(signalView.getParam(), signalView.getSerial()) : signalView.getTopic();
             TopicTree topicTree = dataService.getTopicTree(topic);
             view.addValue(ValueView.builder()
                 .name(signalView.getTopic())
@@ -88,16 +87,14 @@ public class DataController extends Base {
         return responseEntityTemplate.response("controller.data.signalSelector.successful.200", view);
     }
 
-    private String getTopic(String topic, String param, String serial) {
-        return Optional.ofNullable(topic).orElseGet(() -> {
+    private String getTopic(String param, String serial) {
 
-            DeviceView deviceView = apiService.call(ServiceName.DEVICE_FIND_BY_SERIAL, HttpMethod.GET, null,
-                List.of(serial), null,
-                new TypeToken<DeviceView>() {
-                }.getType());
+        DeviceView deviceView = apiService.call(ServiceName.DEVICE_FIND_BY_SERIAL, HttpMethod.GET, null,
+            List.of(serial), null,
+            new TypeToken<DeviceView>() {
+            }.getType());
 
-            return Stream.of(deviceView.getDeviceTypeName(), serial, "data", param).collect(Collectors.joining("/"));
-        });
+        return Stream.of(deviceView.getDeviceTypeName(), serial, "data", param).collect(Collectors.joining("/"));
     }
 
     @PostMapping("/signal-selector/export")
