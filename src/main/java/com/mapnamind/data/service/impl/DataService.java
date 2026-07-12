@@ -78,6 +78,11 @@ public class DataService implements IDataService {
     }
 
     private void resolveProperty(SignalDTO signalDTO) {
+
+        if (signalDTO.getIsProperty() == null) {
+            return;
+        }
+
         if (signalDTO.getIsProperty().equals("0")) {
             signalDTO.setIsProperty(null);
         } else if (signalDTO.getIsProperty().equals("1")) {
