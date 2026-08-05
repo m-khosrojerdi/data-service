@@ -15,14 +15,14 @@ build:
     - |
       if [[ "$CI_COMMIT_BRANCH" == "main" ]]; then
       ./script.sh prod
-      docker build . --add-host=nexus.mapnamind.com:192.168.1.149 -t $TAG_LATEST
+      docker build . --add-host=nexus.mapnamind.com:172.22.254.131 -t $TAG_LATEST
       docker image tag $TAG_LATEST $TAG_COMMIT
       docker image push $TAG_LATEST
       docker image push $TAG_COMMIT
       docker image rm --force $TAG_LATEST $TAG_COMMIT
       else
       ./script.sh dev
-      docker build . --add-host=nexus.mapnamind.com:192.168.1.149 -t $TAG_TEST
+      docker build . --add-host=nexus.mapnamind.com:172.22.254.131 -t $TAG_TEST
       docker image push $TAG_TEST
       docker image rm --force $TAG_TEST
       fi
@@ -34,7 +34,7 @@ deploy:
   script:
     - |
       if [[ "$CI_COMMIT_BRANCH" == "dev" ]]; then
-        ssh root@192.168.1.101 "kubectl rollout restart deployment data-service -n development"
+        ssh root@172.22.253.131 "kubectl rollout restart deployment data-service -n development"
       elif [[ "$CI_COMMIT_BRANCH" == "main" ]]; then
-        ssh root@192.168.1.101 "kubectl rollout restart deployment data-service"
+        ssh root@172.22.253.131 "kubectl rollout restart deployment data-service"
       fi
