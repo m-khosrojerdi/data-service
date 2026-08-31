@@ -21,4 +21,6 @@ public interface ITopicTreeService {
 
     TopicTree findTopicsById(Long id);
 
+    List<TopicTree> findAllRoot();
+
 }

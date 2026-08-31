@@ -96,6 +96,17 @@ public class TopicTreeController extends Base {
         );
     }
 
+    @GetMapping("/root/get-all")
+    @PreAuthorize(AuthorizeType.ADMIN)
+    @SecurityRequirements(value = {
+            @SecurityRequirement(name = ACCESS_TOKEN),
+            @SecurityRequirement(name = LANGUAGE)})
+    public ResponseBody<List<TopicTreeView>> getAllRoot() {
+        return responseEntityTemplate.response("controller.topicTree.getAllRoot.success.200",
+                map(TopicTreeMapper.class).sourcesToTargets(service.findAllRoot())
+        );
+    }
+
     @PutMapping("/update")
     @PreAuthorize(AuthorizeType.ADMIN)
     @SecurityRequirements(value = {
@@ -108,7 +119,6 @@ public class TopicTreeController extends Base {
                         service.update(map(TopicTreeMapper.class).targetToSource(view))
                 )
         );
-
     }
 
     @GetMapping("/date")

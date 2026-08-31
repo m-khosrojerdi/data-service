@@ -54,4 +54,8 @@ public interface TopicTreeRepository extends JpaRepository<TopicTree, Long> {
     List<TopicTree> findByDescription(@Param("DESCRIPTION") String description);
 
     Optional<TopicTree> findByPath(String path);
+
+    @Query("SELECT T FROM TopicTree T WHERE T.parent IS NULL AND T.topic IN (SELECT DT.name FROM DeviceType DT)")
+    List<TopicTree> findAllRoot();
+
 }

@@ -292,4 +292,9 @@ public class TopicTreeService implements ITopicTreeService {
     public TopicTree findTopicsById(Long id) {
         return repository.findById(id).orElseThrow(() -> new ServiceException("service.topicTree.notFound.9010"));
     }
+
+    @Override
+    public List<TopicTree> findAllRoot() {
+        return repository.findAllRoot();
+    }
 }
