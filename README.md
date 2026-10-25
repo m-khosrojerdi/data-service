@@ -1,31 +1,111 @@
-#Data Service
+# data-service
 
-You can use dev Bash script for deploying and managing a Java application on the local system or remote server. It includes features for building the project, deploying it to the server, starting and stopping the service, and viewing logs. The script is designed to be extensible and easy to use.
+Telemetry query and topic-tree service. It exposes the historical/aggregated data
+used by charts and exports, owns the `TopicTree` (signal hierarchy) API, serves
+live data over WebSocket, and accepts offline data published back into the
+platform.
 
+## Runtime shape
 
-- Dependency check: Ensures that required dependencies (`pv` and `xmlstarlet`) are installed.
-- Modular structure: Organizes tasks into functions for improved readability and maintenance.
-- Logging: Logs script output to a `deployment.log` file for tracking and debugging.
-- Error handling: Gracefully handles errors and logs error messages.
-- Service management: Allows starting, stopping, and restarting the remote service.
-- SSH key management: Supports SSH key generation and copying to the remote host.
-- Configuration: Easily configurable variables for customization.
+| Item | Value |
+| --- | --- |
+| Port | `9005` |
+| Spring application name | `data-service` |
+| Config Server data | `data-service, common-config, datasource, service, activemq` |
+| Extra dependencies | `spring-boot-starter-websocket`, `spring-boot-starter-activemq` |
+| Gateway exposure | `/data/**, /topic-tree/**, /baseline/**, /offline-data/**` plus the raw WebSocket paths `/ws`, `/ws/**` (+ `/data/v3/api-docs`) |
 
-## Usage
+```
+data-service
+└── com.mapnadigital.insights.insights.data (43 classes)
+    ├── DataApplication                @EnableJpaRepositories
+    ├── configuration
+    │   ├── WebSocketConfig            @EnableWebSocket, WebSocketConfigurer
+    │   └── JwtHandshakeInterceptor    authenticates the WebSocket handshake
+    ├── controller                     DataController, OfflineDataController,
+    │                                  BaselineController, TopicTreeController (extend Base)
+    ├── service (4 interfaces)         IDataService, IBaselineService,
+    │                                  IOfflineDataService, ITopicTreeService
+    ├── service/impl                   + WebSocketService (TextWebSocketHandler)
+    ├── repository                     DataRepository, BaselineRepository,
+    │                                  TopicTreeRepository, IOfflineDataRepository
+    │                                  (+ repository/impl/OfflineDataRepository)
+    ├── mapper                         7 MapStruct mappers
+    ├── dto                            DataProjectionDTO, ExportDataProjectionDTO, ExportRequest,
+    │                                  BaselineDTO, OfflineDataDTO, SignalDTO, TopicTreeDTO
+    ├── view                           7 response views
+    └── util/Constant                  queue/topic names
+```
 
-1. Clone or download the project from mapna repository on your local machine.
-2. Make the script executable: `chmod +x dev`
-3. Run the script with one of the following commands:
+## HTTP API
 
-    - `./dev build`: Check dependencies, and build the project.
-    - `./dev run`: Check dependencies, build the project, and run the service on local system.
-    - `./dev deploy`: Check dependencies, generate SSH key if not exist, build, and deploy.
-    - `./dev all`: Check dependencies, generate SSH key if not exist, build, deploy, restart service, and show service logs.
-    - `./dev start`: Check dependencies, generate SSH key if not exist, and start the remote service.
-    - `./dev stop`: Check dependencies, generate SSH key if not exist, and stop the remote service.
-    - `./dev restart`: Check dependencies, generate SSH key if not exist, and restart the remote service.
-    - `./dev log`: Check dependencies, generate SSH key if not exist, and display logs from the remote host.
+| Method | Path | Handler | Description |
+| --- | --- | --- | --- |
+| `POST` | `/data` | `signalSelector` | Time-series query over selected signals (`SignalDTO` -> `DataProjectionDTO`) |
+| `POST` | `/data/signal-selector/export` | `signalSelectorExport` | Asynchronous export of the same query (`ExportRequest`) |
+| `POST` | `/baseline` | `get` | Baseline values for the requested devices/signals |
+| `PUT` | `/baseline` | `updateOrDelete` | Create/update/remove baselines |
+| `POST` | `/offline-data/publish` | `publish` | Persist data collected offline by a client (`OfflineDataDTO`) |
+| `GET` | `/topic-tree/root-tree` | `rootTree` | Root topics with children |
+| `GET` | `/topic-tree/children-tree/{parentId}` | `childrenTree` | Sub-tree of a node |
+| `GET` | `/topic-tree/search` | `search` | Topic search |
+| `GET` | `/topic-tree/get` | `getTopics` | Topic list |
+| `GET` | `/topic-tree/get/{id}` | `getTopic` | Single topic |
+| `GET` | `/topic-tree/root/get-all` | `getAllRoot` | All root topics |
+| `GET` | `/topic-tree/date` | `date` | Latest data timestamp for the topics |
+| `PUT` | `/topic-tree/update` | `update` | Update topic metadata |
 
-## Logging
+`/topic-tree/get`, `/topic-tree/get/{id}` and `/topic-tree/root/get-all` are also
+published to other services through `service.yml` as `topicTree-get-by-topic`,
+`topicTree-getById` and `topicTree-get-all-root-topics`.
 
-The script logs its output to a `deployment.log` file in the same directory as the script. You can check this log file for information about the script's execution and any error messages encountered.
+## Asynchronous export
+
+Signal-selector exports are not produced inline:
+
+```
+POST /data/signal-selector/export
+  -> DataService.signalSelectorExport()   builds ExportRequest, sends via JmsTemplate
+  -> ActiveMQ queue "signal-selector-export"
+  -> @JmsListener(destination = SIGNAL_SELECTOR_EXPORT_CONSUMER_QUEUE_NAME,
+                  concurrency = SIGNAL_SELECTOR_EXPORT_CONSUMER_QUEUE_CONCURRENCY)
+     DataService.exportSignalSelector()   reads data, writes the export file
+```
+
+Both the queue name (`signal-selector-export`) and the concurrency value are
+constants in `com.mapnadigital.insights.insights.data.util.Constant`, so the
+worker count is a build-time decision, not a YAML property.
+
+## WebSocket live data
+
+`WebSocketConfig` registers the handler at **`/ws`** with
+`JwtHandshakeInterceptor` and `setAllowedOriginPatterns("*")`. The handler is
+`WebSocketService` (`TextWebSocketHandler`), which pushes live telemetry to
+connected dashboards.
+
+## Data model (`map-common` entities)
+
+| Entity | Table | Role |
+| --- | --- | --- |
+| `Data` | `Data` (no explicit `@Table`) | Stored telemetry samples |
+| `Baseline` | `cmn.device_baseline_values` | Per-device/signal baseline used for comparisons |
+| `TopicTree` | `cmn.topicTree` | Signal hierarchy, topic paths and metadata |
+
+`OfflineDataRepository` is a hand-written implementation behind
+`IOfflineDataRepository` (no JPA interface) used for the offline-ingestion path.
+
+## Notes
+
+- Queries are projection-based (`DataProjectionDTO`,
+  `ExportDataProjectionDTO`) rather than entity-based, which keeps large result
+  sets out of the persistence context.
+- `TopicTreeService` is `@Transactional`; all controllers extend `map-web`'s
+  `Base` and answer with the standard envelope.
+- The WebSocket endpoint must be routed by the reverse proxy in front of the
+gateway as well (the gateway route only covers the HTTP paths).
+
+## Build and run
+
+```bash
+./dev build && ./dev run
+```
