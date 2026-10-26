@@ -14,7 +14,6 @@ import com.mapnadigital.insights.web.enumeration.ServiceName;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mapstruct.factory.Mappers;
-import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -67,8 +66,8 @@ public class BaselineService implements IBaselineService {
     }
 
     private DeviceDTO getDevice(String topic) {
-        return apiService.call(ServiceName.DEVICE_FIND_BY_SERIAL, HttpMethod.GET, null,
-                Collections.singletonList(topic.split(SLASH)[1]), null, new TypeToken<DeviceDTO>() {
+        return apiService.get(ServiceName.DEVICE_FIND_BY_SERIAL,
+                Collections.singletonList(topic.split(SLASH)[1]), new TypeToken<DeviceDTO>() {
                 }.getType());
     }
 }

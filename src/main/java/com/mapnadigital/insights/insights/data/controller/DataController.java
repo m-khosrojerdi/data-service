@@ -25,7 +25,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.http.HttpMethod;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
@@ -35,8 +34,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.mapnadigital.insights.insights.common.util.Constant.*;
-import static com.mapnadigital.insights.web.enumeration.Swagger.ACCESS_TOKEN;
-import static com.mapnadigital.insights.web.enumeration.Swagger.LANGUAGE;
+import static com.mapnadigital.insights.web.enumeration.Swagger.*;
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -51,8 +49,10 @@ public class DataController extends Base {
     @PostMapping({"/signal-selector", "get-data"})
     @HasAnyRole(Role.CUSTOMER)
     @SecurityRequirements(value = {
-        @SecurityRequirement(name = ACCESS_TOKEN),
-        @SecurityRequirement(name = LANGUAGE)})
+            @SecurityRequirement(name = ACCESS_TOKEN),
+            @SecurityRequirement(name = LANGUAGE),
+            @SecurityRequirement(name = REALM)
+    })
     public ResponseBody<?> signalSelector(@Valid @RequestBody SignalSelectorView view) {
 
         List<SignalView> signalViews;
@@ -74,25 +74,24 @@ public class DataController extends Base {
             String topic = HttpRequest.getUri().endsWith("get-data") ? getTopic(signalView.getParam(), signalView.getSerial()) : signalView.getTopic();
             TopicTree topicTree = dataService.getTopicTree(topic);
             view.addValue(ValueView.builder()
-                .name(signalView.getTopic())
-                .effectiveInterval(effectiveInterval)
-                .data(dataService.aggregate(topic, view.getStartDate(), view.getEndDate(), effectiveInterval, map(SignalMapper.class).targetToSource(signalView))
-                    .stream().map(data -> map(DataMapper.class).sourceToTarget(data)).toList())
-                .unit(topicTree.getUnit())
-                .baselineValue(baselineService.getValue(topic, signalView.getInterval()))
-                .param(signalView.getParam())
-                .serial(signalView.getSerial())
-                .build());
+                    .name(signalView.getTopic())
+                    .effectiveInterval(effectiveInterval)
+                    .data(dataService.aggregate(topic, view.getStartDate(), view.getEndDate(), effectiveInterval, map(SignalMapper.class).targetToSource(signalView))
+                            .stream().map(data -> map(DataMapper.class).sourceToTarget(data)).toList())
+                    .unit(topicTree.getUnit())
+                    .baselineValue(baselineService.getValue(topic, signalView.getInterval()))
+                    .param(signalView.getParam())
+                    .serial(signalView.getSerial())
+                    .build());
         }
         return responseEntityTemplate.response("controller.data.signalSelector.successful.200", view);
     }
 
     private String getTopic(String param, String serial) {
 
-        DeviceView deviceView = apiService.call(ServiceName.DEVICE_FIND_BY_SERIAL, HttpMethod.GET, null,
-            List.of(serial), null,
-            new TypeToken<DeviceView>() {
-            }.getType());
+        DeviceView deviceView = apiService.get(ServiceName.DEVICE_FIND_BY_SERIAL,
+                List.of(serial), new TypeToken<DeviceView>() {
+                }.getType());
 
         return Stream.of(deviceView.getDeviceTypeName(), serial, "data", param).collect(Collectors.joining("/"));
     }
@@ -100,13 +99,15 @@ public class DataController extends Base {
     @PostMapping("/signal-selector/export")
     @HasAnyRole(Role.CUSTOMER)
     @SecurityRequirements(value = {
-        @SecurityRequirement(name = ACCESS_TOKEN),
-        @SecurityRequirement(name = LANGUAGE)})
+            @SecurityRequirement(name = ACCESS_TOKEN),
+            @SecurityRequirement(name = LANGUAGE),
+            @SecurityRequirement(name = REALM)
+    })
     public ResponseBody<SignalSelectorView> signalSelectorExport(@Valid @RequestBody SignalSelectorView view) {
 
         view.setExportUuid(dataService.export(ExportRequest.builder().startDate(view.getStartDate())
-            .endDate(view.getEndDate()).signalDTOs(map(SignalMapper.class).targetsToSources(view.getSignals()))
-            .isPersian(LocaleContextHolder.getLocale().equals(FA_LOCALE)).build()));
+                .endDate(view.getEndDate()).signalDTOs(map(SignalMapper.class).targetsToSources(view.getSignals()))
+                .isPersian(LocaleContextHolder.getLocale().equals(FA_LOCALE)).build()));
 
         return responseEntityTemplate.response("controller.data.export.successful.200", view);
     }
