@@ -5,14 +5,14 @@ import com.mapnadigital.insights.insights.data.mapper.BaselineMapper;
 import com.mapnadigital.insights.insights.data.service.impl.BaselineService;
 import com.mapnadigital.insights.insights.data.view.BaselineView;
 import com.mapnadigital.insights.web.Base;
-import com.mapnadigital.insights.web.enumeration.AuthorizeType;
+import com.mapnadigital.insights.web.annotation.HasAnyRole;
+import com.mapnadigital.insights.web.enumeration.Role;
 import com.mapnadigital.insights.web.view.ResponseBody;
 import com.mapnadigital.insights.web.view.ResponseEntityTemplate;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import static com.mapnadigital.insights.web.enumeration.Swagger.ACCESS_TOKEN;
@@ -28,7 +28,7 @@ public class BaselineController extends Base {
 
 
     @PostMapping
-    @PreAuthorize((AuthorizeType.CUSTOMER))
+    @HasAnyRole(Role.CUSTOMER)
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
@@ -38,7 +38,7 @@ public class BaselineController extends Base {
     }
 
     @PutMapping
-    @PreAuthorize(AuthorizeType.CUSTOMER)
+    @HasAnyRole(Role.CUSTOMER)
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})

@@ -13,8 +13,9 @@ import com.mapnadigital.insights.insights.data.view.SignalSelectorView;
 import com.mapnadigital.insights.insights.data.view.SignalView;
 import com.mapnadigital.insights.insights.data.view.ValueView;
 import com.mapnadigital.insights.web.Base;
+import com.mapnadigital.insights.web.annotation.HasAnyRole;
 import com.mapnadigital.insights.web.api.ApiService;
-import com.mapnadigital.insights.web.enumeration.AuthorizeType;
+import com.mapnadigital.insights.web.enumeration.Role;
 import com.mapnadigital.insights.web.enumeration.ServiceName;
 import com.mapnadigital.insights.web.util.HttpRequest;
 import com.mapnadigital.insights.web.view.ResponseBody;
@@ -25,7 +26,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.mapnadigital.insights.insights.common.util.Constant.*;
 import static com.mapnadigital.insights.web.enumeration.Swagger.ACCESS_TOKEN;
 import static com.mapnadigital.insights.web.enumeration.Swagger.LANGUAGE;
 
@@ -48,7 +49,7 @@ public class DataController extends Base {
     private final ResponseEntityTemplate responseEntityTemplate;
 
     @PostMapping({"/signal-selector", "get-data"})
-    @PreAuthorize(AuthorizeType.CUSTOMER)
+    @HasAnyRole(Role.CUSTOMER)
     @SecurityRequirements(value = {
         @SecurityRequirement(name = ACCESS_TOKEN),
         @SecurityRequirement(name = LANGUAGE)})
@@ -97,7 +98,7 @@ public class DataController extends Base {
     }
 
     @PostMapping("/signal-selector/export")
-    @PreAuthorize(AuthorizeType.CUSTOMER)
+    @HasAnyRole(Role.CUSTOMER)
     @SecurityRequirements(value = {
         @SecurityRequirement(name = ACCESS_TOKEN),
         @SecurityRequirement(name = LANGUAGE)})

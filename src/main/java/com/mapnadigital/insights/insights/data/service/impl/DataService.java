@@ -31,6 +31,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.mapnadigital.insights.insights.common.util.Constant.*;
 import static com.mapnadigital.insights.insights.common.util.StringUtil.isNullOrBlank;
 import static com.mapnadigital.insights.insights.data.util.Constant.*;
 

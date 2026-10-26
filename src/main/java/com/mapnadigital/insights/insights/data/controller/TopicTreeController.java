@@ -8,14 +8,14 @@ import com.mapnadigital.insights.insights.data.mapper.TopicTreeViewMapper;
 import com.mapnadigital.insights.insights.data.service.ITopicTreeService;
 import com.mapnadigital.insights.insights.data.view.DateView;
 import com.mapnadigital.insights.web.Base;
-import com.mapnadigital.insights.web.enumeration.AuthorizeType;
+import com.mapnadigital.insights.web.annotation.HasAnyRole;
+import com.mapnadigital.insights.web.enumeration.Role;
 import com.mapnadigital.insights.web.view.ResponseBody;
 import com.mapnadigital.insights.web.view.ResponseEntityTemplate;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
@@ -34,7 +34,7 @@ public class TopicTreeController extends Base {
     private final ResponseEntityTemplate responseEntityTemplate;
 
     @GetMapping("/root-tree")
-    @PreAuthorize(AuthorizeType.ADMIN_CUSTOMER_MANUFACTURE_AGENCY)
+    @HasAnyRole({Role.ADMIN, Role.CUSTOMER, Role.MANUFACTURE, Role.AGENCY})
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
@@ -45,7 +45,7 @@ public class TopicTreeController extends Base {
     }
 
     @GetMapping("/children-tree/{parentId}")
-    @PreAuthorize(AuthorizeType.ADMIN_CUSTOMER_MANUFACTURE_AGENCY)
+    @HasAnyRole({Role.ADMIN, Role.CUSTOMER, Role.MANUFACTURE, Role.AGENCY})
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
@@ -56,7 +56,7 @@ public class TopicTreeController extends Base {
     }
 
     @GetMapping("/search")
-    @PreAuthorize(AuthorizeType.ADMIN_CUSTOMER_MANUFACTURE_AGENCY)
+    @HasAnyRole({Role.ADMIN, Role.CUSTOMER, Role.MANUFACTURE, Role.AGENCY})
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
@@ -72,7 +72,7 @@ public class TopicTreeController extends Base {
     }
 
     @GetMapping("/get")
-    @PreAuthorize(AuthorizeType.ADMIN_CUSTOMER)
+    @HasAnyRole({Role.ADMIN, Role.CUSTOMER})
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
@@ -86,7 +86,7 @@ public class TopicTreeController extends Base {
 
     @Hidden
     @GetMapping("/get/{id}")
-    @PreAuthorize(AuthorizeType.ADMIN_CUSTOMER_MANUFACTURE_AGENCY)
+    @HasAnyRole({Role.ADMIN, Role.CUSTOMER, Role.MANUFACTURE, Role.AGENCY})
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
@@ -97,7 +97,7 @@ public class TopicTreeController extends Base {
     }
 
     @GetMapping("/root/get-all")
-    @PreAuthorize(AuthorizeType.ADMIN)
+    @HasAnyRole(Role.ADMIN)
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
@@ -108,7 +108,7 @@ public class TopicTreeController extends Base {
     }
 
     @PutMapping("/update")
-    @PreAuthorize(AuthorizeType.ADMIN)
+    @HasAnyRole(Role.ADMIN)
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)
@@ -122,7 +122,7 @@ public class TopicTreeController extends Base {
     }
 
     @GetMapping("/date")
-    @PreAuthorize(AuthorizeType.ADMIN_CUSTOMER_MANUFACTURE_AGENCY)
+    @HasAnyRole({Role.ADMIN, Role.CUSTOMER, Role.MANUFACTURE, Role.AGENCY})
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
