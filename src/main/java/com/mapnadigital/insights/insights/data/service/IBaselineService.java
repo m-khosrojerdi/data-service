@@ -1,14 +1,14 @@
 package com.mapnadigital.insights.insights.data.service;
 
-import com.mapnadigital.insights.insights.data.dto.BaselineDTO;
+import com.mapnadigital.insights.insights.data.view.BaselineView;
 
 public interface IBaselineService {
 
-    BaselineDTO get(String topic, String interval);
+    BaselineView get(String topic, String interval);
 
-    BaselineDTO save(BaselineDTO dto);
+    BaselineView save(BaselineView dto);
 
-    void delete(BaselineDTO dto);
+    void delete(BaselineView dto);
 
     Double getValue(String topic, String interval);
 }

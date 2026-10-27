@@ -2,16 +2,16 @@ package com.mapnadigital.insights.insights.data.service.impl;
 
 import com.google.gson.Gson;
 import com.mapnadigital.insights.insights.common.execption.ServiceException;
-import com.mapnadigital.insights.insights.common.model.entity.TopicTree;
 import com.mapnadigital.insights.insights.common.payload.file.FileManagerResponse;
 import com.mapnadigital.insights.insights.common.util.DateTimeUtil;
 import com.mapnadigital.insights.insights.common.util.ExcelUtil;
 import com.mapnadigital.insights.insights.common.util.StringUtil;
 import com.mapnadigital.insights.insights.common.util.ZipUtil;
-import com.mapnadigital.insights.insights.data.dto.DataProjectionDTO;
-import com.mapnadigital.insights.insights.data.dto.ExportDataProjectionDTO;
-import com.mapnadigital.insights.insights.data.dto.ExportRequest;
-import com.mapnadigital.insights.insights.data.dto.SignalDTO;
+import com.mapnadigital.insights.insights.common.view.topicTree.TopicTreeView;
+import com.mapnadigital.insights.insights.data.view.DataValue;
+import com.mapnadigital.insights.insights.data.view.ExportDataProjectionView;
+import com.mapnadigital.insights.insights.data.view.ExportRequestView;
+import com.mapnadigital.insights.insights.data.view.SignalView;
 import com.mapnadigital.insights.insights.data.repository.DataRepository;
 import com.mapnadigital.insights.insights.data.service.IDataService;
 import com.mapnadigital.insights.insights.data.service.WebSocketService;
@@ -47,16 +47,15 @@ public class DataService implements IDataService {
     private final JmsTemplate jmsTemplate;
     private final Gson gson;
 
-    public List<DataProjectionDTO> aggregate(String topic, String startDate, String endDate, String effectiveInterval, SignalDTO signalDTO) {
+    public List<DataValue> aggregate(String topic, String startDate, String endDate, String effectiveInterval, SignalView signalDTO) {
         try {
             signalDTO.setTopic(topic);
             resolveProperty(signalDTO);
             return (dataRepository.aggregate(signalDTO.getTopic(), startDate, endDate, signalDTO.getIsProperty(),
                     effectiveInterval,
                     signalDTO.getAggregation()))
-                    .stream().map(dataProjection -> DataProjectionDTO.builder()
-                            .dateTime(dataProjection.getDateTime().toString())
-                            .value(decorateValue(signalDTO.getTopic(), dataProjection.getValue())).build()).toList();
+                    .stream().map(dataProjection -> new DataValue(dataProjection.getDateTime().toString(),
+                            decorateValue(signalDTO.getTopic(), dataProjection.getValue()))).toList();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             throw new ServiceException("service.common.databaseError.9003");
@@ -68,7 +67,7 @@ public class DataService implements IDataService {
     }
 
     @Override
-    public String export(ExportRequest exportRequest) {
+    public String export(ExportRequestView exportRequest) {
 
         String uuid = UUID.randomUUID().toString();
         exportRequest.setUuid(uuid);
@@ -77,7 +76,7 @@ public class DataService implements IDataService {
         return uuid;
     }
 
-    private void resolveProperty(SignalDTO signalDTO) {
+    private void resolveProperty(SignalView signalDTO) {
 
         if (signalDTO.getIsProperty() == null) {
             return;
@@ -97,7 +96,7 @@ public class DataService implements IDataService {
 
     @JmsListener(destination = SIGNAL_SELECTOR_EXPORT_CONSUMER_QUEUE_NAME,
             concurrency = SIGNAL_SELECTOR_EXPORT_CONSUMER_QUEUE_CONCURRENCY)
-    public void consumeExportRequest(ExportRequest exportRequest) throws Exception {
+    public void consumeExportRequestView(ExportRequestView exportRequest) throws Exception {
 
         FileManagerResponse file;
 
@@ -111,23 +110,23 @@ public class DataService implements IDataService {
             throw new Exception(e);
         }
 
-        webSocketService.sendToUser(exportRequest.getUsername(), gson.toJson(ExportRequest.builder().uuid(exportRequest.getUuid()).file(file).build()));
+        webSocketService.sendToUser(exportRequest.getUsername(), gson.toJson(ExportRequestView.builder().uuid(exportRequest.getUuid()).file(file).build()));
     }
 
-    private Workbook createExcel(ExportRequest exportRequest) {
+    private Workbook createExcel(ExportRequestView exportRequest) {
         Workbook workbook = new XSSFWorkbook();
-        for (SignalDTO signalDTO : exportRequest.getSignalDTOs()) {
+        for (SignalView signalDTO : exportRequest.getSignals()) {
             resolveProperty(signalDTO);
-            List<ExportDataProjectionDTO> data = dataRepository.aggregate(
+            List<ExportDataProjectionView> data = dataRepository.aggregate(
                             signalDTO.getTopic(), exportRequest.getStartDate(), exportRequest.getEndDate(), signalDTO.getIsProperty(), signalDTO.getInterval(), signalDTO.getAggregation())
                     .stream().map(dataProjection -> {
                         String[] dateTime = (exportRequest.getIsPersian() ? DateTimeUtil.toJalaliDateTime(dataProjection.getDateTime(), ZoneId.systemDefault()) : dataProjection.getDateTime().toString()).split(SPACE);
-                        return ExportDataProjectionDTO.builder()
+                        return ExportDataProjectionView.builder()
                                 .date(dateTime[0])
                                 .time(dateTime[1])
                                 .value(decorateValue(signalDTO.getTopic(), dataProjection.getValue())).build();
                     }).toList();
-            TopicTree topicTree = getTopicTree(signalDTO.getTopic());
+            TopicTreeView topicTree = getTopicTree(signalDTO.getTopic());
             String sheetName = StringUtil.keepLeading(StringUtil.get(topicTree.getDescription()).orElse(topicTree.getTopic()), 24) +
                     DASH +
                     StringUtil.keepTrailing(signalDTO.getTopic().replaceFirst("[^/]+/([^/]+)(?:/[^/]+){2}", "$1"), 6);
@@ -138,7 +137,7 @@ public class DataService implements IDataService {
         return workbook;
     }
 
-    public TopicTree getTopicTree(String topic) {
+    public TopicTreeView getTopicTree(String topic) {
         return topicTreeService.findByPath(topic.replaceFirst("(/[^/]+){2}", "$1"));
     }
 }

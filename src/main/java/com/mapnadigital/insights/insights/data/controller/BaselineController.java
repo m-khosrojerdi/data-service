@@ -1,7 +1,6 @@
 package com.mapnadigital.insights.insights.data.controller;
 
-import com.mapnadigital.insights.insights.data.dto.BaselineDTO;
-import com.mapnadigital.insights.insights.data.mapper.BaselineMapper;
+import com.mapnadigital.insights.insights.data.view.BaselineView;
 import com.mapnadigital.insights.insights.data.service.impl.BaselineService;
 import com.mapnadigital.insights.insights.data.view.BaselineView;
 import com.mapnadigital.insights.web.Base;
@@ -34,7 +33,7 @@ public class BaselineController extends Base {
             @SecurityRequirement(name = LANGUAGE)})
     public ResponseBody<BaselineView> get(@Valid @RequestBody BaselineView view) {
         return responseEntityTemplate.response("controller.baseline.get.successful.200",
-                map(BaselineMapper.class).sourceToTarget(baselineService.get(view.getTopic(), view.getInterval())));
+                baselineService.get(view.getTopic(), view.getInterval()));
     }
 
     @PutMapping
@@ -44,15 +43,13 @@ public class BaselineController extends Base {
             @SecurityRequirement(name = LANGUAGE)})
     public ResponseBody<BaselineView> updateOrDelete(@Valid @RequestBody BaselineView view) {
 
-        BaselineDTO dto = switch (view.getValue() == null ? "delete" : "save") {
-            case "delete" -> {
-                baselineService.delete(map(BaselineMapper.class).targetToSource(view));
-                yield BaselineDTO.builder().build();
-            }
-            default -> baselineService.save(map(BaselineMapper.class).targetToSource(view));
-        };
+        BaselineView result = view.getValue() == null
+                ? BaselineView.builder().build()
+                : baselineService.save(view);
+        if (view.getValue() == null) {
+            baselineService.delete(view);
+        }
 
-        return responseEntityTemplate.response("controller.baseline.put.successful.200",
-                map(BaselineMapper.class).sourceToTarget(dto));
+        return responseEntityTemplate.response("controller.baseline.put.successful.200", result);
     }
 }

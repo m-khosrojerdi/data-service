@@ -1,26 +1,25 @@
 package com.mapnadigital.insights.insights.data.service;
 
-import com.mapnadigital.insights.insights.common.model.entity.TopicTree;
-import com.mapnadigital.insights.insights.data.dto.TopicTreeDTO;
+import com.mapnadigital.insights.insights.common.view.topicTree.TopicTreeView;
 
 import java.util.List;
 
 public interface ITopicTreeService {
 
-    List<TopicTreeDTO> findParentsTree();
+    List<TopicTreeView> findParentsTree();
 
-    List<TopicTree> findTopicsByDeviceType(Long id);
+    List<TopicTreeView> findTopicsByDeviceType(Long id);
 
-    TopicTree update(TopicTree dto);
+    TopicTreeView update(TopicTreeView view);
 
-    List<TopicTreeDTO> findChildrenTreeFromParent(Long parentId);
+    List<TopicTreeView> findChildrenTreeFromParent(Long parentId);
 
-    List<TopicTreeDTO> findBySerialOrDescription(String deviceName, String serialNumber, String description, Long companyId);
+    List<TopicTreeView> findBySerialOrDescription(String deviceName, String serialNumber, String description, Long companyId);
 
-    TopicTree findByPath(String path);
+    TopicTreeView findByPath(String path);
 
-    TopicTree findTopicsById(Long id);
+    TopicTreeView findTopicsById(Long id);
 
-    List<TopicTree> findAllRoot();
+    List<TopicTreeView> findAllRoot();
 
 }

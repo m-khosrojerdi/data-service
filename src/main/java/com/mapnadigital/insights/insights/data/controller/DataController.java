@@ -1,12 +1,10 @@
 package com.mapnadigital.insights.insights.data.controller;
 
 import com.google.gson.reflect.TypeToken;
-import com.mapnadigital.insights.insights.common.model.entity.TopicTree;
 import com.mapnadigital.insights.insights.common.util.DateTimeUtil;
 import com.mapnadigital.insights.insights.common.view.device.DeviceView;
-import com.mapnadigital.insights.insights.data.dto.ExportRequest;
-import com.mapnadigital.insights.insights.data.mapper.DataMapper;
-import com.mapnadigital.insights.insights.data.mapper.SignalMapper;
+import com.mapnadigital.insights.insights.common.view.topicTree.TopicTreeView;
+import com.mapnadigital.insights.insights.data.view.ExportRequestView;
 import com.mapnadigital.insights.insights.data.service.impl.BaselineService;
 import com.mapnadigital.insights.insights.data.service.impl.DataService;
 import com.mapnadigital.insights.insights.data.view.SignalSelectorView;
@@ -72,12 +70,11 @@ public class DataController extends Base {
             Duration computedDuration = DateTimeUtil.rondToMinutes(Duration.between(DateTimeUtil.toDateTime(view.getStartDate()), DateTimeUtil.toDateTime(view.getEndDate())).dividedBy(signalView.getSampleCount()));
             String effectiveInterval = DateTimeUtil.durationToPostgresInterval(inputDuration.compareTo(computedDuration) > 0 ? inputDuration : computedDuration);
             String topic = HttpRequest.getUri().endsWith("get-data") ? getTopic(signalView.getParam(), signalView.getSerial()) : signalView.getTopic();
-            TopicTree topicTree = dataService.getTopicTree(topic);
+            TopicTreeView topicTree = dataService.getTopicTree(topic);
             view.addValue(ValueView.builder()
                     .name(signalView.getTopic())
                     .effectiveInterval(effectiveInterval)
-                    .data(dataService.aggregate(topic, view.getStartDate(), view.getEndDate(), effectiveInterval, map(SignalMapper.class).targetToSource(signalView))
-                            .stream().map(data -> map(DataMapper.class).sourceToTarget(data)).toList())
+                    .data(dataService.aggregate(topic, view.getStartDate(), view.getEndDate(), effectiveInterval, signalView))
                     .unit(topicTree.getUnit())
                     .baselineValue(baselineService.getValue(topic, signalView.getInterval()))
                     .param(signalView.getParam())
@@ -105,8 +102,8 @@ public class DataController extends Base {
     })
     public ResponseBody<SignalSelectorView> signalSelectorExport(@Valid @RequestBody SignalSelectorView view) {
 
-        view.setExportUuid(dataService.export(ExportRequest.builder().startDate(view.getStartDate())
-                .endDate(view.getEndDate()).signalDTOs(map(SignalMapper.class).targetsToSources(view.getSignals()))
+        view.setExportUuid(dataService.export(ExportRequestView.builder().startDate(view.getStartDate())
+                .endDate(view.getEndDate()).signals(view.getSignals())
                 .isPersian(LocaleContextHolder.getLocale().equals(FA_LOCALE)).build()));
 
         return responseEntityTemplate.response("controller.data.export.successful.200", view);

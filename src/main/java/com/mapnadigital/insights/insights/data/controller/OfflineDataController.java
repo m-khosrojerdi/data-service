@@ -1,6 +1,5 @@
 package com.mapnadigital.insights.insights.data.controller;
 
-import com.mapnadigital.insights.insights.data.mapper.OfflineDataMapper;
 import com.mapnadigital.insights.insights.data.service.IOfflineDataService;
 import com.mapnadigital.insights.insights.data.view.OfflineDataView;
 import com.mapnadigital.insights.web.Base;
@@ -32,7 +31,7 @@ public class OfflineDataController extends Base {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
     public ResponseBody<?> publish(@Valid @RequestBody OfflineDataView view) {
-        service.save(map(OfflineDataMapper.class).targetToSource(view));
+        service.save(view);
         return responseEntityTemplate.response("controller.offlineData.publish.successful.200");
     }
 

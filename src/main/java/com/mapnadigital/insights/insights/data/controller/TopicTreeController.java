@@ -1,10 +1,8 @@
 package com.mapnadigital.insights.insights.data.controller;
 
-import com.mapnadigital.insights.insights.common.mapper.topicTree.TopicTreeMapper;
 import com.mapnadigital.insights.insights.common.util.Constant;
 import com.mapnadigital.insights.insights.common.util.Toolbox;
 import com.mapnadigital.insights.insights.common.view.topicTree.TopicTreeView;
-import com.mapnadigital.insights.insights.data.mapper.TopicTreeViewMapper;
 import com.mapnadigital.insights.insights.data.service.ITopicTreeService;
 import com.mapnadigital.insights.insights.data.view.DateView;
 import com.mapnadigital.insights.web.Base;
@@ -40,7 +38,7 @@ public class TopicTreeController extends Base {
             @SecurityRequirement(name = LANGUAGE)})
     public ResponseBody<List<TopicTreeView>> rootTree() {
         return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200",
-                map(TopicTreeViewMapper.class).sourcesToTargets(service.findParentsTree())
+                service.findParentsTree()
         );
     }
 
@@ -51,7 +49,7 @@ public class TopicTreeController extends Base {
             @SecurityRequirement(name = LANGUAGE)})
     public ResponseBody<List<TopicTreeView>> childrenTree(@PathVariable("parentId") Long parentId) {
         return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200",
-                map(TopicTreeViewMapper.class).sourcesToTargets(service.findChildrenTreeFromParent(parentId))
+                service.findChildrenTreeFromParent(parentId)
         );
     }
 
@@ -65,7 +63,7 @@ public class TopicTreeController extends Base {
                                                     @RequestParam(name = "description", required = false) String description,
                                                     @RequestParam(name = "company", required = false) Long company) {
         return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200",
-                map(TopicTreeViewMapper.class).sourcesToTargets(
+                (
                         service.findBySerialOrDescription(deviceName, serialNumber, description, company)
                 )
         );
@@ -78,9 +76,7 @@ public class TopicTreeController extends Base {
             @SecurityRequirement(name = LANGUAGE)})
     public ResponseBody<List<TopicTreeView>> getTopics(@RequestParam Long deviceTypeId) {
         return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200",
-                map(TopicTreeMapper.class).sourcesToTargets(
-                        service.findTopicsByDeviceType(deviceTypeId)
-                )
+                service.findTopicsByDeviceType(deviceTypeId)
         );
     }
 
@@ -92,7 +88,7 @@ public class TopicTreeController extends Base {
             @SecurityRequirement(name = LANGUAGE)})
     public ResponseBody<TopicTreeView> getTopic(@PathVariable Long id) {
         return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200",
-                map(TopicTreeMapper.class).sourceToTarget(service.findTopicsById(id))
+                service.findTopicsById(id)
         );
     }
 
@@ -103,7 +99,7 @@ public class TopicTreeController extends Base {
             @SecurityRequirement(name = LANGUAGE)})
     public ResponseBody<List<TopicTreeView>> getAllRoot() {
         return responseEntityTemplate.response("controller.topicTree.getAllRoot.success.200",
-                map(TopicTreeMapper.class).sourcesToTargets(service.findAllRoot())
+                service.findAllRoot()
         );
     }
 
@@ -115,10 +111,7 @@ public class TopicTreeController extends Base {
     })
     public ResponseBody<TopicTreeView> update(@RequestBody TopicTreeView view) {
         return responseEntityTemplate.response("controller.topicTree.updateTopicTree.success.200",
-                map(TopicTreeMapper.class).sourceToTarget(
-                        service.update(map(TopicTreeMapper.class).targetToSource(view))
-                )
-        );
+                service.update(view));
     }
 
     @GetMapping("/date")

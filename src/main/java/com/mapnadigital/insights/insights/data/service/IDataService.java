@@ -1,18 +1,18 @@
 package com.mapnadigital.insights.insights.data.service;
 
-import com.mapnadigital.insights.insights.common.model.entity.TopicTree;
-import com.mapnadigital.insights.insights.data.dto.DataProjectionDTO;
-import com.mapnadigital.insights.insights.data.dto.ExportRequest;
-import com.mapnadigital.insights.insights.data.dto.SignalDTO;
+import com.mapnadigital.insights.insights.common.view.topicTree.TopicTreeView;
+import com.mapnadigital.insights.insights.data.view.DataValue;
+import com.mapnadigital.insights.insights.data.view.ExportRequestView;
+import com.mapnadigital.insights.insights.data.view.SignalView;
 
 import java.util.List;
 
 public interface IDataService {
 
-    List<DataProjectionDTO> aggregate(String topic, String startDate, String endDate, String effectiveInterval, SignalDTO signalDTO);
+    List<DataValue> aggregate(String topic, String startDate, String endDate, String effectiveInterval, SignalView signalDTO);
 
-    String export(ExportRequest exportRequestDTO);
+    String export(ExportRequestView exportRequestDTO);
 
-    TopicTree getTopicTree(String topic);
+    TopicTreeView getTopicTree(String topic);
 
 }

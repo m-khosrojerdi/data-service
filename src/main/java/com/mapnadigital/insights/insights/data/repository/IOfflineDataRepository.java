@@ -1,9 +1,9 @@
 package com.mapnadigital.insights.insights.data.repository;
 
-import com.mapnadigital.insights.insights.data.dto.OfflineDataDTO;
+import com.mapnadigital.insights.insights.data.view.OfflineDataView;
 
 public interface IOfflineDataRepository {
 
-    void save(OfflineDataDTO dto);
+    void save(OfflineDataView dto);
 
 }
