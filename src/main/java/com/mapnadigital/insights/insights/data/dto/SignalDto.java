@@ -1,4 +1,4 @@
-package com.mapnadigital.insights.insights.data.view;
+package com.mapnadigital.insights.insights.data.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -12,7 +12,7 @@ import java.io.Serializable;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class SignalView implements Serializable {
+public class SignalDto implements Serializable {
 
     @NotBlank
     private String topic;

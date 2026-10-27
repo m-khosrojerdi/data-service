@@ -1,4 +1,4 @@
-package com.mapnadigital.insights.insights.data.view;
+package com.mapnadigital.insights.insights.data.dto;
 
 import com.mapnadigital.insights.insights.common.payload.file.FileManagerResponse;
 import lombok.AllArgsConstructor;
@@ -11,18 +11,18 @@ import java.util.List;
 
 /**
  * Signal-selector export request. It is the controller request body and the
- * ActiveMQ message payload, replacing the former {@code ExportRequestView} DTO.
+ * ActiveMQ message payload, replacing the former {@code ExportRequestDto} DTO.
  */
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ExportRequestView implements Serializable {
+public class ExportRequestDto implements Serializable {
 
     private String username;
     private String startDate;
     private String endDate;
-    private List<SignalView> signals;
+    private List<SignalDto> signals;
     private Boolean isPersian;
     private String uuid;
     private FileManagerResponse file;

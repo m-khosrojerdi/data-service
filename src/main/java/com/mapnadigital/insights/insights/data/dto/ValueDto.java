@@ -1,4 +1,4 @@
-package com.mapnadigital.insights.insights.data.view;
+package com.mapnadigital.insights.insights.data.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,7 +12,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ValueView implements Serializable {
+public class ValueDto implements Serializable {
 
     private String name;
     private String serial;

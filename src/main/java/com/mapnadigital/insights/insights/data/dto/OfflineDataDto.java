@@ -1,4 +1,4 @@
-package com.mapnadigital.insights.insights.data.view;
+package com.mapnadigital.insights.insights.data.dto;
 
 import com.mapnadigital.insights.insights.common.annotation.Date;
 import jakarta.validation.constraints.NotBlank;
@@ -13,7 +13,7 @@ import java.io.Serializable;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class OfflineDataView implements Serializable {
+public class OfflineDataDto implements Serializable {
 
     @NotBlank(message = "view.offlineData.topic.notBlank")
     private String topic;

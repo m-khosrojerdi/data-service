@@ -1,6 +1,6 @@
 package com.mapnadigital.insights.insights.data.service.impl;
 
-import com.mapnadigital.insights.insights.data.view.OfflineDataView;
+import com.mapnadigital.insights.insights.data.dto.OfflineDataDto;
 import com.mapnadigital.insights.insights.data.repository.IOfflineDataRepository;
 import com.mapnadigital.insights.insights.data.service.IOfflineDataService;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +13,7 @@ public class OfflineDataService implements IOfflineDataService {
     private final IOfflineDataRepository repository;
 
     @Override
-    public void save(OfflineDataView dto) {
+    public void save(OfflineDataDto dto) {
         repository.save(dto);
     }
 

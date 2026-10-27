@@ -2,22 +2,22 @@ package com.mapnadigital.insights.insights.data.controller;
 
 import com.google.gson.reflect.TypeToken;
 import com.mapnadigital.insights.insights.common.util.DateTimeUtil;
-import com.mapnadigital.insights.insights.common.view.device.DeviceView;
-import com.mapnadigital.insights.insights.common.view.topicTree.TopicTreeView;
-import com.mapnadigital.insights.insights.data.view.ExportRequestView;
+import com.mapnadigital.insights.insights.common.dto.device.DeviceDto;
+import com.mapnadigital.insights.insights.common.dto.topicTree.TopicTreeDto;
+import com.mapnadigital.insights.insights.data.dto.ExportRequestDto;
 import com.mapnadigital.insights.insights.data.service.impl.BaselineService;
 import com.mapnadigital.insights.insights.data.service.impl.DataService;
-import com.mapnadigital.insights.insights.data.view.SignalSelectorView;
-import com.mapnadigital.insights.insights.data.view.SignalView;
-import com.mapnadigital.insights.insights.data.view.ValueView;
+import com.mapnadigital.insights.insights.data.dto.SignalSelectorDto;
+import com.mapnadigital.insights.insights.data.dto.SignalDto;
+import com.mapnadigital.insights.insights.data.dto.ValueDto;
 import com.mapnadigital.insights.web.Base;
 import com.mapnadigital.insights.web.annotation.HasAnyRole;
 import com.mapnadigital.insights.web.api.ApiService;
 import com.mapnadigital.insights.web.enumeration.Role;
 import com.mapnadigital.insights.web.enumeration.ServiceName;
 import com.mapnadigital.insights.web.util.HttpRequest;
-import com.mapnadigital.insights.web.view.ResponseBody;
-import com.mapnadigital.insights.web.view.ResponseEntityTemplate;
+import com.mapnadigital.insights.web.dto.ResponseBody;
+import com.mapnadigital.insights.web.dto.ResponseEntityTemplate;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import jakarta.validation.Valid;
@@ -51,12 +51,12 @@ public class DataController extends Base {
             @SecurityRequirement(name = LANGUAGE),
             @SecurityRequirement(name = REALM)
     })
-    public ResponseBody<?> signalSelector(@Valid @RequestBody SignalSelectorView view) {
+    public ResponseBody<?> signalSelector(@Valid @RequestBody SignalSelectorDto view) {
 
-        List<SignalView> signalViews;
+        List<SignalDto> signalViews;
         if (view.getStringSignals() != null && view.getSignals() == null) {
             signalViews = Arrays.stream(view.getStringSignals().split(COMMA)).map(s -> {
-                SignalView signalView = new SignalView();
+                SignalDto signalView = new SignalDto();
                 signalView.setTopic(s.split(COLON)[0]);
                 signalView.setIsProperty(s.split(COLON)[1]);
                 return signalView;
@@ -65,13 +65,13 @@ public class DataController extends Base {
             signalViews = view.getSignals();
         }
 
-        for (SignalView signalView : signalViews) {
+        for (SignalDto signalView : signalViews) {
             Duration inputDuration = DateTimeUtil.rondToMinutes(DateTimeUtil.postgresIntervalToDuration(signalView.getInterval()));
             Duration computedDuration = DateTimeUtil.rondToMinutes(Duration.between(DateTimeUtil.toDateTime(view.getStartDate()), DateTimeUtil.toDateTime(view.getEndDate())).dividedBy(signalView.getSampleCount()));
             String effectiveInterval = DateTimeUtil.durationToPostgresInterval(inputDuration.compareTo(computedDuration) > 0 ? inputDuration : computedDuration);
             String topic = HttpRequest.getUri().endsWith("get-data") ? getTopic(signalView.getParam(), signalView.getSerial()) : signalView.getTopic();
-            TopicTreeView topicTree = dataService.getTopicTree(topic);
-            view.addValue(ValueView.builder()
+            TopicTreeDto topicTree = dataService.getTopicTree(topic);
+            view.addValue(ValueDto.builder()
                     .name(signalView.getTopic())
                     .effectiveInterval(effectiveInterval)
                     .data(dataService.aggregate(topic, view.getStartDate(), view.getEndDate(), effectiveInterval, signalView))
@@ -86,8 +86,8 @@ public class DataController extends Base {
 
     private String getTopic(String param, String serial) {
 
-        DeviceView deviceView = apiService.get(ServiceName.DEVICE_FIND_BY_SERIAL,
-                List.of(serial), new TypeToken<DeviceView>() {
+        DeviceDto deviceView = apiService.get(ServiceName.DEVICE_FIND_BY_SERIAL,
+                List.of(serial), new TypeToken<DeviceDto>() {
                 }.getType());
 
         return Stream.of(deviceView.getDeviceTypeName(), serial, "data", param).collect(Collectors.joining("/"));
@@ -100,9 +100,9 @@ public class DataController extends Base {
             @SecurityRequirement(name = LANGUAGE),
             @SecurityRequirement(name = REALM)
     })
-    public ResponseBody<SignalSelectorView> signalSelectorExport(@Valid @RequestBody SignalSelectorView view) {
+    public ResponseBody<SignalSelectorDto> signalSelectorExport(@Valid @RequestBody SignalSelectorDto view) {
 
-        view.setExportUuid(dataService.export(ExportRequestView.builder().startDate(view.getStartDate())
+        view.setExportUuid(dataService.export(ExportRequestDto.builder().startDate(view.getStartDate())
                 .endDate(view.getEndDate()).signals(view.getSignals())
                 .isPersian(LocaleContextHolder.getLocale().equals(FA_LOCALE)).build()));
 

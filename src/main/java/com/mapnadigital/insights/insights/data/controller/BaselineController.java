@@ -1,13 +1,13 @@
 package com.mapnadigital.insights.insights.data.controller;
 
-import com.mapnadigital.insights.insights.data.view.BaselineView;
+import com.mapnadigital.insights.insights.data.dto.BaselineDto;
 import com.mapnadigital.insights.insights.data.service.impl.BaselineService;
-import com.mapnadigital.insights.insights.data.view.BaselineView;
+import com.mapnadigital.insights.insights.data.dto.BaselineDto;
 import com.mapnadigital.insights.web.Base;
 import com.mapnadigital.insights.web.annotation.HasAnyRole;
 import com.mapnadigital.insights.web.enumeration.Role;
-import com.mapnadigital.insights.web.view.ResponseBody;
-import com.mapnadigital.insights.web.view.ResponseEntityTemplate;
+import com.mapnadigital.insights.web.dto.ResponseBody;
+import com.mapnadigital.insights.web.dto.ResponseEntityTemplate;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import jakarta.validation.Valid;
@@ -31,7 +31,7 @@ public class BaselineController extends Base {
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
-    public ResponseBody<BaselineView> get(@Valid @RequestBody BaselineView view) {
+    public ResponseBody<BaselineDto> get(@Valid @RequestBody BaselineDto view) {
         return responseEntityTemplate.response("controller.baseline.get.successful.200",
                 baselineService.get(view.getTopic(), view.getInterval()));
     }
@@ -41,10 +41,10 @@ public class BaselineController extends Base {
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
-    public ResponseBody<BaselineView> updateOrDelete(@Valid @RequestBody BaselineView view) {
+    public ResponseBody<BaselineDto> updateOrDelete(@Valid @RequestBody BaselineDto view) {
 
-        BaselineView result = view.getValue() == null
-                ? BaselineView.builder().build()
+        BaselineDto result = view.getValue() == null
+                ? BaselineDto.builder().build()
                 : baselineService.save(view);
         if (view.getValue() == null) {
             baselineService.delete(view);

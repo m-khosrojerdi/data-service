@@ -1,13 +1,13 @@
 package com.mapnadigital.insights.insights.data.service.impl;
 
 import com.google.gson.reflect.TypeToken;
-import com.mapnadigital.insights.insights.common.view.userAsset.UserAssetView;
+import com.mapnadigital.insights.insights.common.dto.userAsset.UserAssetDto;
 import com.mapnadigital.insights.insights.common.execption.ServiceException;
 import com.mapnadigital.insights.insights.common.model.entity.TopicTree;
-import com.mapnadigital.insights.insights.common.view.company.CompanyView;
-import com.mapnadigital.insights.insights.common.view.device.DeviceView;
-import com.mapnadigital.insights.insights.common.view.deviceType.DeviceTypeView;
-import com.mapnadigital.insights.insights.common.view.topicTree.TopicTreeView;
+import com.mapnadigital.insights.insights.common.dto.company.CompanyDto;
+import com.mapnadigital.insights.insights.common.dto.device.DeviceDto;
+import com.mapnadigital.insights.insights.common.dto.deviceType.DeviceTypeDto;
+import com.mapnadigital.insights.insights.common.dto.topicTree.TopicTreeDto;
 import com.mapnadigital.insights.insights.common.mapper.topicTree.TopicTreeMapper;
 import com.mapnadigital.insights.insights.data.repository.TopicTreeRepository;
 import com.mapnadigital.insights.insights.data.service.ITopicTreeService;
@@ -32,28 +32,28 @@ import static com.mapnadigital.insights.insights.common.util.Constant.SLASH;
 @RequiredArgsConstructor
 public class TopicTreeService implements ITopicTreeService {
 
-    private static final Type SERIAL_NUMBERS_TYPE = new TypeToken<List<DeviceView>>() {
+    private static final Type SERIAL_NUMBERS_TYPE = new TypeToken<List<DeviceDto>>() {
     }.getType();
-    private static final Type USER_ASSET_VIEWS = new TypeToken<List<UserAssetView>>() {
+    private static final Type USER_ASSET_VIEWS = new TypeToken<List<UserAssetDto>>() {
     }.getType();
     private final TopicTreeRepository repository;
     private final ApiService apiService;
 
     @Override
-    public List<TopicTreeView> findParentsTree() {
-        List<DeviceView> devices = apiService.get(ServiceName.USER_GET_ALL_SERIAL_NUMBER_BY_ACCESS_LEVEL, SERIAL_NUMBERS_TYPE);
+    public List<TopicTreeDto> findParentsTree() {
+        List<DeviceDto> devices = apiService.get(ServiceName.USER_GET_ALL_SERIAL_NUMBER_BY_ACCESS_LEVEL, SERIAL_NUMBERS_TYPE);
         if (devices.isEmpty()) {
             throw new ServiceException("service.topicTree.common.emptyDevices.9004");
         }
-        return findTopicTrees(devices, getDevicesName(devices.stream().map(DeviceView::getId).toList(), null));
+        return findTopicTrees(devices, getDevicesName(devices.stream().map(DeviceDto::getId).toList(), null));
     }
 
     @Override
-    public List<TopicTreeView> findTopicsByDeviceType(Long deviceTypeId) {
+    public List<TopicTreeDto> findTopicsByDeviceType(Long deviceTypeId) {
 
-        DeviceTypeView deviceType = apiService.get(ServiceName.DEVICE_TYPE_GET_BY_ID,
+        DeviceTypeDto deviceType = apiService.get(ServiceName.DEVICE_TYPE_GET_BY_ID,
                 List.of(deviceTypeId.toString()),
-                new TypeToken<DeviceTypeView>() {
+                new TypeToken<DeviceTypeDto>() {
                 }.getType());
         if (deviceType == null) {
             throw new ServiceException("service.topicTree.common.deviceType.9008");
@@ -61,9 +61,9 @@ public class TopicTreeService implements ITopicTreeService {
 
         List<TopicTree> topics;
         if (deviceType.getHasHub()) {
-            DeviceTypeView hubDeviceType = apiService.get(ServiceName.DEVICE_TYPE_GET_BY_ID,
+            DeviceTypeDto hubDeviceType = apiService.get(ServiceName.DEVICE_TYPE_GET_BY_ID,
                     List.of(deviceType.getHubId().toString()),
-                    new TypeToken<DeviceTypeView>() {
+                    new TypeToken<DeviceTypeDto>() {
                     }.getType());
             topics = repository.findHasHubDeviceTypeTopics(deviceType.getName(), hubDeviceType.getName() + "/data%");
         } else {
@@ -73,7 +73,7 @@ public class TopicTreeService implements ITopicTreeService {
     }
 
     @Override
-    public TopicTreeView update(TopicTreeView view) {
+    public TopicTreeDto update(TopicTreeDto view) {
 
         if (view.getId() == null) {
             throw new ServiceException("service.topicTree.update.idIsNull.9007");
@@ -100,24 +100,24 @@ public class TopicTreeService implements ITopicTreeService {
     }
 
     @Override
-    public List<TopicTreeView> findChildrenTreeFromParent(Long parentId) {
+    public List<TopicTreeDto> findChildrenTreeFromParent(Long parentId) {
         var entities = repository.findAllByParent(parentId);
         return Mappers.getMapper(TopicTreeMapper.class).sourcesToTargets(entities)
                 .stream().peek(dto -> dto.setCode(dto.getId())).toList();
     }
 
     @Override
-    public List<TopicTreeView> findBySerialOrDescription(String deviceName, String serialNumber, String description,
+    public List<TopicTreeDto> findBySerialOrDescription(String deviceName, String serialNumber, String description,
                                                         Long companyId) {
-        List<CompanyView> companies;
+        List<CompanyDto> companies;
         if (companyId != null) {
-            companies = apiService.get(ServiceName.USER_GET_COMPANY, new TypeToken<List<CompanyView>>() {
+            companies = apiService.get(ServiceName.USER_GET_COMPANY, new TypeToken<List<CompanyDto>>() {
             }.getType());
             if (companies.stream().noneMatch(company -> company.getId().equals(companyId))) {
                 throw new ServiceException("service.topicTree.common.notExistsMembersInThisCompany.9006");
             }
         }
-        List<DeviceView> devices = apiService.get(ServiceName.USER_GET_ALL_SERIAL_NUMBER_BY_ACCESS_LEVEL, SERIAL_NUMBERS_TYPE);
+        List<DeviceDto> devices = apiService.get(ServiceName.USER_GET_ALL_SERIAL_NUMBER_BY_ACCESS_LEVEL, SERIAL_NUMBERS_TYPE);
         if (devices == null || devices.isEmpty()) {
             throw new ServiceException("service.topicTree.common.emptyDevices.9004");
         }
@@ -128,7 +128,7 @@ public class TopicTreeService implements ITopicTreeService {
             }
         }
         if (serialNumber == null && deviceName == null && description == null) {
-            return findTopicTrees(devices, getDevicesName(devices.stream().map(DeviceView::getId).toList(), null));
+            return findTopicTrees(devices, getDevicesName(devices.stream().map(DeviceDto::getId).toList(), null));
         } else if (serialNumber != null && !serialNumber.isEmpty()) {
             var searchDevices = devices.stream().filter(device ->
                     device.getSerialNumber().contains(serialNumber)
@@ -136,10 +136,10 @@ public class TopicTreeService implements ITopicTreeService {
             if (searchDevices.isEmpty()) {
                 throw new ServiceException("service.topicTree.findBySerialOrDescription.serialNumberNotExists.9005");
             }
-            return findTopicTrees(searchDevices, getDevicesName(devices.stream().map(DeviceView::getId).toList(), null));
+            return findTopicTrees(searchDevices, getDevicesName(devices.stream().map(DeviceDto::getId).toList(), null));
 
         } else if (deviceName != null && !deviceName.isEmpty()) {
-            var getAllDeviceNames = getDevicesName(devices.stream().map(DeviceView::getId).toList(), deviceName);
+            var getAllDeviceNames = getDevicesName(devices.stream().map(DeviceDto::getId).toList(), deviceName);
             var searchDevices = devices.stream().filter(device ->
                     getAllDeviceNames.containsKey(device.getSerialNumber())
             ).toList();
@@ -147,7 +147,7 @@ public class TopicTreeService implements ITopicTreeService {
             return findTopicTrees(searchDevices, getAllDeviceNames);
         } else if (description != null && !description.isEmpty()) {
             var entities = repository.findByDescription(description);
-            var deviceTypeNames = devices.stream().map(DeviceView::getDeviceTypeName).toList();
+            var deviceTypeNames = devices.stream().map(DeviceDto::getDeviceTypeName).toList();
             var finalTopicTrees = new ArrayList<TopicTree>();
             for (var entity : entities) {
                 if (deviceTypeNames.contains(entity.getPath().split(SLASH)[0])) {
@@ -158,7 +158,7 @@ public class TopicTreeService implements ITopicTreeService {
             }
             var dto = generateParentTree(
                     Mappers.getMapper(TopicTreeMapper.class).sourcesToTargets(finalTopicTrees), devices,
-                    getDevicesName(devices.stream().map(DeviceView::getId).toList(), null)
+                    getDevicesName(devices.stream().map(DeviceDto::getId).toList(), null)
             );
             devices.clear();
             return dto;
@@ -179,7 +179,7 @@ public class TopicTreeService implements ITopicTreeService {
         }
     }
 
-    private List<TopicTreeView> findTopicTrees(List<DeviceView> devices, Map<String, String> nameDevices) {
+    private List<TopicTreeDto> findTopicTrees(List<DeviceDto> devices, Map<String, String> nameDevices) {
         var deviceTypeNames = devices.stream()
                 .map(device -> device.getHubDeviceTypeName() != null ?
                         device.getHubDeviceTypeName() :
@@ -194,11 +194,11 @@ public class TopicTreeService implements ITopicTreeService {
         return generateParentTree(Mappers.getMapper(TopicTreeMapper.class).sourcesToTargets(rootTopicTrees), devices, nameDevices);
     }
 
-    private List<TopicTreeView> generateParentTree(List<TopicTreeView> dtos, List<DeviceView> deviceViews, Map<String, String> nameDevices) {
+    private List<TopicTreeDto> generateParentTree(List<TopicTreeDto> dtos, List<DeviceDto> deviceViews, Map<String, String> nameDevices) {
         // Step 1: Create a map of ID to TreeNode (optimized to avoid parsing String -> Long multiple times)
         var nodes = dtos.stream()
                 .collect(Collectors.toMap(
-                                TopicTreeView::getId,
+                                TopicTreeDto::getId,
                                 row -> row
                         )
                 );
@@ -217,7 +217,7 @@ public class TopicTreeService implements ITopicTreeService {
             var cloneId = countId++;
 
             // Initialize serial TopicTree node
-            var serialNode = TopicTreeView.builder()
+            var serialNode = TopicTreeDto.builder()
                     .id(id)
                     .topic(device.getSerialNumber())
                     .deviceName(nameDevices.get(device.getSerialNumber()))
@@ -248,7 +248,7 @@ public class TopicTreeService implements ITopicTreeService {
         }
         topicTreesThatAreData.forEach(node -> nodes.remove(node.getId()));
 
-        var topicTrees = new ArrayList<TopicTreeView>();
+        var topicTrees = new ArrayList<TopicTreeDto>();
         for (var row : nodes.values()) {
             var parentId = row.getParentId();
 
@@ -265,14 +265,14 @@ public class TopicTreeService implements ITopicTreeService {
     }
 
     private Map<String, String> getDevicesName(List<Long> deviceIds, String deviceName) {
-        List<UserAssetView> userAssetDTOS = apiService.get(ServiceName.USER_DEVICE_FIND_ALL_BY_USER_AND_DEVICE_IDS,
+        List<UserAssetDto> userAssetDTOS = apiService.get(ServiceName.USER_DEVICE_FIND_ALL_BY_USER_AND_DEVICE_IDS,
                 deviceIds.stream().map(String::valueOf).toList(), USER_ASSET_VIEWS
         );
         return deviceName != null ? userAssetDTOS.stream()
                 .filter(dto -> contains(dto.getNickName(), deviceName) || contains(dto.getDeviceTypeName(), deviceName))
-                .collect(Collectors.toMap(UserAssetView::getSerialNumber, UserAssetView::getNickName))
+                .collect(Collectors.toMap(UserAssetDto::getSerialNumber, UserAssetDto::getNickName))
                 :
-                userAssetDTOS.stream().collect(Collectors.toMap(UserAssetView::getSerialNumber, UserAssetView::getNickName));
+                userAssetDTOS.stream().collect(Collectors.toMap(UserAssetDto::getSerialNumber, UserAssetDto::getNickName));
     }
 
     private boolean contains(String str1, String str2) {
@@ -281,20 +281,20 @@ public class TopicTreeService implements ITopicTreeService {
     }
 
     @Override
-    public TopicTreeView findByPath(String path) {
+    public TopicTreeDto findByPath(String path) {
         return Mappers.getMapper(TopicTreeMapper.class).sourceToTarget(
                 repository.findByPath(path).orElseThrow(() -> new ServiceException("service.topicTree.notFound.9010"))
         );
     }
 
     @Override
-    public TopicTreeView findTopicsById(Long id) {
+    public TopicTreeDto findTopicsById(Long id) {
         return Mappers.getMapper(TopicTreeMapper.class).sourceToTarget(
                 repository.findById(id).orElseThrow(() -> new ServiceException("service.topicTree.notFound.9010")));
     }
 
     @Override
-    public List<TopicTreeView> findAllRoot() {
+    public List<TopicTreeDto> findAllRoot() {
         return Mappers.getMapper(TopicTreeMapper.class).sourcesToTargets(repository.findAllRoot());
     }
 }

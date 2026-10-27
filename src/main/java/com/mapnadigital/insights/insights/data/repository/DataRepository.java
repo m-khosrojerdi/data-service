@@ -1,7 +1,7 @@
 package com.mapnadigital.insights.insights.data.repository;
 
 import com.mapnadigital.insights.insights.common.model.entity.Data;
-import com.mapnadigital.insights.insights.common.model.view.DataProjection;
+import com.mapnadigital.insights.insights.common.model.dto.DataProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

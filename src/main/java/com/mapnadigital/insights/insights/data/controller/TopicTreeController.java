@@ -2,14 +2,14 @@ package com.mapnadigital.insights.insights.data.controller;
 
 import com.mapnadigital.insights.insights.common.util.Constant;
 import com.mapnadigital.insights.insights.common.util.Toolbox;
-import com.mapnadigital.insights.insights.common.view.topicTree.TopicTreeView;
+import com.mapnadigital.insights.insights.common.dto.topicTree.TopicTreeDto;
 import com.mapnadigital.insights.insights.data.service.ITopicTreeService;
-import com.mapnadigital.insights.insights.data.view.DateView;
+import com.mapnadigital.insights.insights.data.dto.DateDto;
 import com.mapnadigital.insights.web.Base;
 import com.mapnadigital.insights.web.annotation.HasAnyRole;
 import com.mapnadigital.insights.web.enumeration.Role;
-import com.mapnadigital.insights.web.view.ResponseBody;
-import com.mapnadigital.insights.web.view.ResponseEntityTemplate;
+import com.mapnadigital.insights.web.dto.ResponseBody;
+import com.mapnadigital.insights.web.dto.ResponseEntityTemplate;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
@@ -36,7 +36,7 @@ public class TopicTreeController extends Base {
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
-    public ResponseBody<List<TopicTreeView>> rootTree() {
+    public ResponseBody<List<TopicTreeDto>> rootTree() {
         return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200",
                 service.findParentsTree()
         );
@@ -47,7 +47,7 @@ public class TopicTreeController extends Base {
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
-    public ResponseBody<List<TopicTreeView>> childrenTree(@PathVariable("parentId") Long parentId) {
+    public ResponseBody<List<TopicTreeDto>> childrenTree(@PathVariable("parentId") Long parentId) {
         return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200",
                 service.findChildrenTreeFromParent(parentId)
         );
@@ -58,7 +58,7 @@ public class TopicTreeController extends Base {
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
-    public ResponseBody<List<TopicTreeView>> search(@RequestParam(name = "deviceName", required = false) String deviceName,
+    public ResponseBody<List<TopicTreeDto>> search(@RequestParam(name = "deviceName", required = false) String deviceName,
                                                     @RequestParam(name = "serialNumber", required = false) String serialNumber,
                                                     @RequestParam(name = "description", required = false) String description,
                                                     @RequestParam(name = "company", required = false) Long company) {
@@ -74,7 +74,7 @@ public class TopicTreeController extends Base {
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
-    public ResponseBody<List<TopicTreeView>> getTopics(@RequestParam Long deviceTypeId) {
+    public ResponseBody<List<TopicTreeDto>> getTopics(@RequestParam Long deviceTypeId) {
         return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200",
                 service.findTopicsByDeviceType(deviceTypeId)
         );
@@ -86,7 +86,7 @@ public class TopicTreeController extends Base {
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
-    public ResponseBody<TopicTreeView> getTopic(@PathVariable Long id) {
+    public ResponseBody<TopicTreeDto> getTopic(@PathVariable Long id) {
         return responseEntityTemplate.response("controller.topicTree.getTopicTree.success.200",
                 service.findTopicsById(id)
         );
@@ -97,7 +97,7 @@ public class TopicTreeController extends Base {
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
-    public ResponseBody<List<TopicTreeView>> getAllRoot() {
+    public ResponseBody<List<TopicTreeDto>> getAllRoot() {
         return responseEntityTemplate.response("controller.topicTree.getAllRoot.success.200",
                 service.findAllRoot()
         );
@@ -109,7 +109,7 @@ public class TopicTreeController extends Base {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)
     })
-    public ResponseBody<TopicTreeView> update(@RequestBody TopicTreeView view) {
+    public ResponseBody<TopicTreeDto> update(@RequestBody TopicTreeDto view) {
         return responseEntityTemplate.response("controller.topicTree.updateTopicTree.success.200",
                 service.update(view));
     }
@@ -119,9 +119,9 @@ public class TopicTreeController extends Base {
     @SecurityRequirements(value = {
             @SecurityRequirement(name = ACCESS_TOKEN),
             @SecurityRequirement(name = LANGUAGE)})
-    public ResponseBody<DateView> date() {
+    public ResponseBody<DateDto> date() {
         return responseEntityTemplate.response("common.200",
-                DateView.builder()
+                DateDto.builder()
                         .date(Toolbox.convertDateToString(Constant.UI_DATE_FORMATTING_New, new Date()))
                         .build()
         );

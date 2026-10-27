@@ -2,7 +2,7 @@ package com.mapnadigital.insights.insights.data.mapper;
 
 import com.mapnadigital.insights.insights.common.mapper.BaseMapper;
 import com.mapnadigital.insights.insights.common.model.entity.Baseline;
-import com.mapnadigital.insights.insights.data.view.BaselineView;
+import com.mapnadigital.insights.insights.data.dto.BaselineDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -13,8 +13,8 @@ import org.mapstruct.MappingTarget;
  * {@code BaselineMapper}).
  */
 @Mapper
-public interface BaselineViewMapper extends BaseMapper<Baseline, BaselineView> {
+public interface BaselineDtoMapper extends BaseMapper<Baseline, BaselineDto> {
 
     @Mapping(target = "id", ignore = true)
-    Baseline updateFromDto(BaselineView dto, @MappingTarget Baseline baseline);
+    Baseline updateFromDto(BaselineDto dto, @MappingTarget Baseline baseline);
 }

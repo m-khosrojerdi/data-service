@@ -1,4 +1,4 @@
-package com.mapnadigital.insights.insights.data.view;
+package com.mapnadigital.insights.insights.data.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +11,7 @@ import java.io.Serializable;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class BaselineView implements Serializable {
+public class BaselineDto implements Serializable {
     private Long id;
     private String topic;
     private String interval;

@@ -1,4 +1,4 @@
-package com.mapnadigital.insights.insights.data.view;
+package com.mapnadigital.insights.insights.data.dto;
 
 import com.mapnadigital.insights.insights.common.annotation.Date;
 import lombok.AllArgsConstructor;
@@ -14,11 +14,11 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class SignalSelectorView implements Serializable {
+public class SignalSelectorDto implements Serializable {
 
     private String stringSignals;
-    private List<SignalView> signals;
-    private List<ValueView> values;
+    private List<SignalDto> signals;
+    private List<ValueDto> values;
 
     @Date
     private String startDate;
@@ -28,7 +28,7 @@ public class SignalSelectorView implements Serializable {
 
     private String exportUuid;
 
-    public void addValue(ValueView value) {
+    public void addValue(ValueDto value) {
         if (values == null) {
             values = new ArrayList<>();
         }

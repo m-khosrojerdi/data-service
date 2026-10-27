@@ -5,6 +5,15 @@ used by charts and exports, owns the `TopicTree` (signal hierarchy) API, serves
 live data over WebSocket, and accepts offline data published back into the
 platform.
 
+## Naming convention (`dto` / `Dto`)
+
+All wire contracts live in `com.mapnadigital.insights.insights.data.dto` (was
+`...data.view`) and every contract type ends with `Dto` (`BaselineView` ->
+`BaselineDto`, `ExportRequestView` -> `ExportRequestDto`, ...), including the
+mapper (`BaselineViewMapper` -> `BaselineDtoMapper`). The shared tree contract is
+`common.dto.topicTree.TopicTreeDto`. Fields, methods, validation annotations and
+JSON property names are unchanged.
+
 ## Runtime shape
 
 | Item | Value |
@@ -30,56 +39,61 @@ data-service
     ├── repository                     DataRepository, BaselineRepository,
     │                                  TopicTreeRepository, IOfflineDataRepository
     │                                  (+ repository/impl/OfflineDataRepository)
-    ├── mapper                         MapStruct mapper (BaselineViewMapper)
-    ├── view                           9 request/response views
+    ├── mapper                         MapStruct mapper (BaselineDtoMapper)
+    ├── dto                           9 request/response DTOs
     └── util/Constant                  queue/topic names
 ```
 
-## Controller -> service -> view flow
+## Controller -> service -> dto flow
 
 | Layer | Responsibility |
 | --- | --- |
-| Controller | Binds/validates the view (`@Valid`) or query parameters and returns the view produced by the service (`DataController`, `BaselineController`, `TopicTreeController`, `OfflineDataController`). No mapping. |
-| Service | Entity-based internally, view-based on the contract. `BaselineService` maps `BaselineView` <-> `Baseline`; `TopicTreeService` loads `TopicTree` entities, assembles the tree and returns `common.view.topicTree.TopicTreeView` (including `findByPath`, which used to leak the entity); `DataService.aggregate` returns `List<DataValue>` straight from the repository projection and `getTopicTree` returns `TopicTreeView`; `OfflineDataService` forwards `OfflineDataView` to the stored procedure. |
-| Mapper | `BaselineViewMapper` (entity <-> view, including the partial update) and the shared `common.mapper.topicTree.TopicTreeMapper`. `DataMapper` was deleted: the projection is already the response shape (`DataValue.x` = timestamp, `DataValue.y` = value). |
-| View | `BaselineView`, `OfflineDataView`, `SignalView`, `SignalSelectorView`, `ExportDataProjectionView`, `ExportRequestView`, `DataValue`, `ValueView`, `DateView` plus the shared `TopicTreeView`. |
+| Controller | Binds/validates the DTO (`@Valid`) or query parameters and returns the DTO produced by the service (`DataController`, `BaselineController`, `TopicTreeController`, `OfflineDataController`). No mapping. |
+| Service | Entity-based internally, DTO-based on the contract. `BaselineService` maps `BaselineDto` <-> `Baseline`; `TopicTreeService` loads `TopicTree` entities, assembles the tree and returns `common.dto.topicTree.TopicTreeDto` (including `findByPath`, which used to leak the entity); `DataService.aggregate` returns `List<DataValue>` straight from the repository projection and `getTopicTree` returns `TopicTreeDto`; `OfflineDataService` forwards `OfflineDataDto` to the stored procedure. |
+| Mapper | `BaselineDtoMapper` (entity <-> DTO, including the partial update) and the shared `common.mapper.topicTree.TopicTreeMapper`. `DataMapper` was deleted: the projection is already the response shape (`DataValue.x` = timestamp, `DataValue.y` = value). |
+| DTO | `BaselineDto`, `OfflineDataDto`, `SignalDto`, `SignalSelectorDto`, `ExportDataProjectionDto`, `ExportRequestDto`, `DataValue`, `ValueDto`, `DateDto` plus the shared `TopicTreeDto`. |
 
-### DTO removal
+### Legacy contracts removed (`dto.*DTO` -> `dto.*Dto`)
+
+The classes in the `Removed` column are gone; their names are written in the
+post-rename `Dto` spelling. The `Replaced by` column names the current
+`dto.*Dto` contracts (the types that were briefly called `*View` before the
+project-wide `View` -> `Dto` rename).
 
 | Removed | Replaced by |
 | --- | --- |
-| `dto.BaselineDTO` + `mapper/BaselineMapper` (identity) | `view.BaselineView`; `BaselineViewMapper` maps the entity directly. |
-| `dto.OfflineDataDTO` + `mapper/OfflineDataMapper` | `view.OfflineDataView`; the repository stores the view directly. |
-| `dto.SignalDTO` + `mapper/SignalMapper` (identity) | `view.SignalView` (same fields plus validation). |
-| `dto.TopicTreeDTO` + `mapper/TopicTreeDTOMapper` / `TopicTreeViewMapper` | `common.view.topicTree.TopicTreeView`, which now owns the tree helpers (`getChildren`, `setChildren`, `addChild`, `clone`). `level`, `logTime` and `priority` are `@JsonIgnore`d, matching the previous two-hop mapping. |
-| `dto.DataProjectionDTO`, `dto.ExportDataProjectionDTO`, `dto.ExportRequest` | `view.DataProjectionView`, `view.ExportDataProjectionView`, `view.ExportRequestView` (the field `signalDTOs` became `signals`). |
-| `view.DataProjectionView` + `mapper.DataMapper` | Nothing. `DataService.aggregate(...)` returns `List<DataValue>` (`x` = timestamp, `y` = decorated value) built directly from the `DataRepository` projection, and `DataController` puts that list into `ValueView.data`. |
-| `common.dto.device.DeviceDTO` / `common.dto.userAsset.UserAssetDTO` | `common.view.device.DeviceView` / `common.view.userAsset.UserAssetView`. |
+| `dto.BaselineDTO` + `mapper/BaselineMapper` (identity) | `dto.BaselineDto`; `BaselineDtoMapper` maps the entity directly. |
+| `dto.OfflineDataDTO` + `mapper/OfflineDataMapper` | `dto.OfflineDataDto`; the repository stores the DTO directly. |
+| `dto.SignalDTO` + `mapper/SignalMapper` (identity) | `dto.SignalDto` (same fields plus validation). |
+| `dto.TopicTreeDTO` + `mapper/TopicTreeDTOMapper` / `TopicTreeDtoMapper` | `common.dto.topicTree.TopicTreeDto`, which now owns the tree helpers (`getChildren`, `setChildren`, `addChild`, `clone`). `level`, `logTime` and `priority` are `@JsonIgnore`d, matching the previous two-hop mapping. |
+| `dto.DataProjectionDTO`, `dto.ExportDataProjectionDTO`, `dto.ExportRequest` | `dto.DataProjectionDto`, `dto.ExportDataProjectionDto`, `dto.ExportRequestDto` (the field `signalDTOs` became `signals`). |
+| `dto.DataProjectionDto` + `mapper.DataMapper` | Nothing. `DataService.aggregate(...)` returns `List<DataValue>` (`x` = timestamp, `y` = decorated value) built directly from the `DataRepository` projection, and `DataController` puts that list into `ValueDto.data`. |
+| `common.dto.device.DeviceDTO` / `common.dto.userAsset.UserAssetDTO` | `common.dto.device.DeviceDto` / `common.dto.userAsset.UserAssetDto`. |
 
-`ExportRequestView` is both the `/data/signal-selector/export` request body and the
+`ExportRequestDto` is both the `/data/signal-selector/export` request body and the
 ActiveMQ message consumed by `exportSignalSelector`; the queue name and the
 concurrency constant are unchanged.
 
 ### Service contracts (no entity exposure)
 
-| Service | Contract | View / Mapper |
+| Service | Contract | DTO / Mapper |
 | --- | --- | --- |
-| `ITopicTreeService.findByPath(String)` | changed from `TopicTree findByPath(String)` to `TopicTreeView findByPath(String)` | `common.view.topicTree.TopicTreeView` + shared `common.mapper.topicTree.TopicTreeMapper` |
-| `IDataService.getTopicTree(String)` | changed from `TopicTree getTopicTree(String)` to `TopicTreeView getTopicTree(String)` | same |
+| `ITopicTreeService.findByPath(String)` | changed from `TopicTree findByPath(String)` to `TopicTreeDto findByPath(String)` | `common.dto.topicTree.TopicTreeDto` + shared `common.mapper.topicTree.TopicTreeMapper` |
+| `IDataService.getTopicTree(String)` | changed from `TopicTree getTopicTree(String)` to `TopicTreeDto getTopicTree(String)` | same |
 
 `BaselineService.save` is the only caller that needs the entity: it maps the
-`TopicTreeView` back with `TopicTreeMapper.targetToSource` before assigning it to
+`TopicTreeDto` back with `TopicTreeMapper.targetToSource` before assigning it to
 `Baseline.topicTree` (a `@ManyToOne`), so the persisted row is unchanged. All other
 callers (`DataController`, `DataService.createExcel`, the baseline lookup) only read
-`unit`, `topic`, `description` and `id` and use the view directly.
+`unit`, `topic`, `description` and `id` and use the DTO directly.
 
 ### Verification
 
 - `mvn -o clean test-compile` succeeds (32 main sources, 1 MapStruct
   implementation).
 - `DataService.aggregate` returns `List<DataValue>` with the same `x`/`y` keys the
-  former `DataProjectionView` produced, so the chart response is unchanged.
-- `TopicTreeView.getChildren()` keeps the former DTO's "never null" behaviour, so a
+  former `DataProjectionDto` produced, so the chart response is unchanged.
+- `TopicTreeDto.getChildren()` keeps the former DTO's "never null" behaviour, so a
   leaf node still serialises an empty `children` array and the response shape is
   unchanged.
 - The asynchronous export path, the WebSocket handler and every endpoint path are
@@ -89,11 +103,11 @@ callers (`DataController`, `DataService.createExcel`, the baseline lookup) only 
 
 | Method | Path | Handler | Description |
 | --- | --- | --- | --- |
-| `POST` | `/data` | `signalSelector` | Time-series query over selected signals (`SignalView` -> `DataValue[]`) |
-| `POST` | `/data/signal-selector/export` | `signalSelectorExport` | Asynchronous export of the same query (`ExportRequestView`) |
+| `POST` | `/data` | `signalSelector` | Time-series query over selected signals (`SignalDto` -> `DataValue[]`) |
+| `POST` | `/data/signal-selector/export` | `signalSelectorExport` | Asynchronous export of the same query (`ExportRequestDto`) |
 | `POST` | `/baseline` | `get` | Baseline values for the requested devices/signals |
 | `PUT` | `/baseline` | `updateOrDelete` | Create/update/remove baselines |
-| `POST` | `/offline-data/publish` | `publish` | Persist data collected offline by a client (`OfflineDataView`) |
+| `POST` | `/offline-data/publish` | `publish` | Persist data collected offline by a client (`OfflineDataDto`) |
 | `GET` | `/topic-tree/root-tree` | `rootTree` | Root topics with children |
 | `GET` | `/topic-tree/children-tree/{parentId}` | `childrenTree` | Sub-tree of a node |
 | `GET` | `/topic-tree/search` | `search` | Topic search |
@@ -113,7 +127,7 @@ Signal-selector exports are not produced inline:
 
 ```
 POST /data/signal-selector/export
-  -> DataService.signalSelectorExport()   builds ExportRequestView, sends via JmsTemplate
+  -> DataService.signalSelectorExport()   builds ExportRequestDto, sends via JmsTemplate
   -> ActiveMQ queue "signal-selector-export"
   -> @JmsListener(destination = SIGNAL_SELECTOR_EXPORT_CONSUMER_QUEUE_NAME,
                   concurrency = SIGNAL_SELECTOR_EXPORT_CONSUMER_QUEUE_CONCURRENCY)
@@ -145,7 +159,7 @@ connected dashboards.
 ## Notes
 
 - Queries are projection-based (`DataValue` on the chart path,
-  `ExportDataProjectionView` on the export path) rather than entity-based, which
+  `ExportDataProjectionDto` on the export path) rather than entity-based, which
   keeps large result sets out of the persistence context.
 - `TopicTreeService` is `@Transactional`; all controllers extend `map-web`'s
   `Base` and answer with the standard envelope.

@@ -1,4 +1,4 @@
-package com.mapnadigital.insights.insights.data.view;
+package com.mapnadigital.insights.insights.data.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,13 +7,13 @@ import lombok.NoArgsConstructor;
 
 /**
  * Export-only projection (date and time are split for the CSV/XLSX writer).
- * It replaces the former {@code ExportDataProjectionView}.
+ * It replaces the former {@code ExportDataProjectionDto}.
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ExportDataProjectionView {
+public class ExportDataProjectionDto {
 
     private Double value;
     private String date;

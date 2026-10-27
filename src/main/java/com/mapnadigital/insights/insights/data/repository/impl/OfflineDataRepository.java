@@ -2,7 +2,7 @@ package com.mapnadigital.insights.insights.data.repository.impl;
 
 import com.mapnadigital.insights.insights.common.execption.ServiceException;
 import com.mapnadigital.insights.insights.common.util.DateTimeUtil;
-import com.mapnadigital.insights.insights.data.view.OfflineDataView;
+import com.mapnadigital.insights.insights.data.dto.OfflineDataDto;
 import com.mapnadigital.insights.insights.data.repository.IOfflineDataRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -23,7 +23,7 @@ public class OfflineDataRepository implements IOfflineDataRepository {
     private final DataSource dataSource;
 
     @Override
-    public void save(OfflineDataView dto) {
+    public void save(OfflineDataDto dto) {
         try {
             Connection connection = dataSource.getConnection();
             String sql = "{ CALL cmn.fnc_save_data(?::text, ?::text, ?::timestamp with time zone) }";
