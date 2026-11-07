@@ -1,8 +1,8 @@
-package com.mapnadigital.insights.insights.data.service;
+package com.mapnadigital.insights.data.service;
 
 import com.mapnadigital.insights.web.api.ApiService;
 /*import com.mapnadigital.common.entity.Data;*/
-import com.mapnadigital.insights.insights.data.DataApplicationTest;
+import com.mapnadigital.insights.data.DataApplicationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 

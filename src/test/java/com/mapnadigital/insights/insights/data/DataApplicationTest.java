@@ -1,6 +1,7 @@
-package com.mapnadigital.insights.insights.data;
+package com.mapnadigital.insights.data;
 
-import com.mapnadigital.insights.insights.common.test.GenericTest;
+import com.mapnadigital.insights.common.test.GenericTest;
+import com.mapnadigital.insights.data.DataApplication;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 

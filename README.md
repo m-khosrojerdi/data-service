@@ -7,7 +7,7 @@ platform.
 
 ## Naming convention (`dto` / `Dto`)
 
-All wire contracts live in `com.mapnadigital.insights.insights.data.dto` (was
+All wire contracts live in `com.mapnadigital.insights.data.dto` (was
 `...data.view`) and every contract type ends with `Dto` (`BaselineView` ->
 `BaselineDto`, `ExportRequestView` -> `ExportRequestDto`, ...), including the
 mapper (`BaselineViewMapper` -> `BaselineDtoMapper`). The shared tree contract is
@@ -26,8 +26,8 @@ JSON property names are unchanged.
 
 ```
 data-service
-└── com.mapnadigital.insights.insights.data (32 classes)
-    ├── DataApplication                @EnableJpaRepositories
+└── com.mapnadigital.insights.data (36 classes)
+    ├── DataApplication                @EnableJpaRepositories, @EntityScan
     ├── configuration
     │   ├── WebSocketConfig            @EnableWebSocket, WebSocketConfigurer
     │   └── JwtHandshakeInterceptor    authenticates the WebSocket handshake
@@ -39,7 +39,10 @@ data-service
     ├── repository                     DataRepository, BaselineRepository,
     │                                  TopicTreeRepository, IOfflineDataRepository
     │                                  (+ repository/impl/OfflineDataRepository)
-    ├── mapper                         MapStruct mapper (BaselineDtoMapper)
+    ├── entity                         Data, Baseline, TopicTree
+    ├── client                         DeviceTypeClient (REST to device-service)
+    ├── client/dto                     DeviceTypeName
+    ├── mapper                         MapStruct mappers (BaselineDtoMapper, TopicTreeMapper)
     ├── dto                           9 request/response DTOs
     └── util/Constant                  queue/topic names
 ```
@@ -50,8 +53,8 @@ data-service
 | --- | --- |
 | Controller | Binds/validates the DTO (`@Valid`) or query parameters and returns the DTO produced by the service (`DataController`, `BaselineController`, `TopicTreeController`, `OfflineDataController`). No mapping. |
 | Service | Entity-based internally, DTO-based on the contract. `BaselineService` maps `BaselineDto` <-> `Baseline`; `TopicTreeService` loads `TopicTree` entities, assembles the tree and returns `common.dto.topicTree.TopicTreeDto` (including `findByPath`, which used to leak the entity); `DataService.aggregate` returns `List<DataValue>` straight from the repository projection and `getTopicTree` returns `TopicTreeDto`; `OfflineDataService` forwards `OfflineDataDto` to the stored procedure. |
-| Mapper | `BaselineDtoMapper` (entity <-> DTO, including the partial update) and the shared `common.mapper.topicTree.TopicTreeMapper`. `DataMapper` was deleted: the projection is already the response shape (`DataValue.x` = timestamp, `DataValue.y` = value). |
-| DTO | `BaselineDto`, `OfflineDataDto`, `SignalDto`, `SignalSelectorDto`, `ExportDataProjectionDto`, `ExportRequestDto`, `DataValue`, `ValueDto`, `DateDto` plus the shared `TopicTreeDto`. |
+| Mapper | `BaselineDtoMapper` (entity <-> DTO, including the partial update) and the module's own `mapper.TopicTreeMapper` (entity <-> `common.dto.topicTree.TopicTreeDto`). `DataMapper` was deleted: the projection is already the response shape (`DataValue.x` = timestamp, `DataValue.y` = value). |
+| DTO | `BaselineDto`, `OfflineDataDto`, `SignalDto`, `SignalSelectorDto`, `ExportDataProjectionDto`, `ExportRequestDto`, `DataValueDto`, `ValueDto`, `DateDto` plus the shared `TopicTreeDto`. |
 
 ### Legacy contracts removed (`dto.*DTO` -> `dto.*Dto`)
 
@@ -113,13 +116,19 @@ callers (`DataController`, `DataService.createExcel`, the baseline lookup) only 
 | `GET` | `/topic-tree/search` | `search` | Topic search |
 | `GET` | `/topic-tree/get` | `getTopics` | Topic list |
 | `GET` | `/topic-tree/get/{id}` | `getTopic` | Single topic |
+| `GET` | `/topic-tree/get-all-by-ids` | `getTopicsByIds` | Topics of the given ids (`?ids=1,2,3`), used by `alarm-service` for batched look-ups |
 | `GET` | `/topic-tree/root/get-all` | `getAllRoot` | All root topics |
 | `GET` | `/topic-tree/date` | `date` | Latest data timestamp for the topics |
 | `PUT` | `/topic-tree/update` | `update` | Update topic metadata |
 
-`/topic-tree/get`, `/topic-tree/get/{id}` and `/topic-tree/root/get-all` are also
-published to other services through `service.yml` as `topicTree-get-by-topic`,
-`topicTree-getById` and `topicTree-get-all-root-topics`.
+`/topic-tree/get`, `/topic-tree/get/{id}`, `/topic-tree/get-all-by-ids` and
+`/topic-tree/root/get-all` are also published to other services through
+`service.yml` as `topicTree-get-by-topic`, `topicTree-getById`,
+`topicTree-getAllByIds` and `topicTree-get-all-root-topics`.
+
+`topicTree-getById` and `topicTree-getAllByIds` are what `alarm-service` uses: it
+owns its entities, so `AlarmDefinition.signalId` / `AlarmEvent.signalId` are read
+back through this API (`TopicInfo`) instead of a JPA relation to `cmn.topicTree`.
 
 ## Asynchronous export
 
@@ -135,7 +144,7 @@ POST /data/signal-selector/export
 ```
 
 Both the queue name (`signal-selector-export`) and the concurrency value are
-constants in `com.mapnadigital.insights.insights.data.util.Constant`, so the
+constants in `com.mapnadigital.insights.data.util.Constant`, so the
 worker count is a build-time decision, not a YAML property.
 
 ## WebSocket live data
@@ -145,20 +154,34 @@ worker count is a build-time decision, not a YAML property.
 `WebSocketService` (`TextWebSocketHandler`), which pushes live telemetry to
 connected dashboards.
 
-## Data model (`map-common` entities)
+## Data model (owned by this module)
 
 | Entity | Table | Role |
 | --- | --- | --- |
 | `Data` | `Data` (no explicit `@Table`) | Stored telemetry samples |
-| `Baseline` | `cmn.device_baseline_values` | Per-device/signal baseline used for comparisons |
+| `Baseline` | `cmn.device_baseline_values` | Per-device/signal baseline used for comparisons; the device is referenced by `deviceId` only |
 | `TopicTree` | `cmn.topicTree` | Signal hierarchy, topic paths and metadata |
+
+The three entities live in `com.mapnadigital.insights.data.entity` and are owned by this
+module; they were moved out of `map-common` so the module no longer imports an entity of the shared
+library. The tables and columns are unchanged (`Baseline.device` became `deviceId` over the same
+`device_id` column). `DataApplication` declares
+`@EntityScan(basePackages = "com.mapnadigital.insights.data.entity")`.
 
 `OfflineDataRepository` is a hand-written implementation behind
 `IOfflineDataRepository` (no JPA interface) used for the offline-ingestion path.
 
+## Cross-module calls
+
+`TopicTreeRepository.findAllRoot` used to sub-select `DeviceType.name` from `device-service`. The
+names are now read over REST through `DeviceTypeApi` (`ServiceName.DEVICE_TYPE_GET_ALL_NAMES` ->
+`GET /device-type/get-all-names`) and passed to the query as a parameter, so the module never joins
+the device type table. `BaselineService` keeps using `ServiceName.DEVICE_FIND_BY_SERIAL` to resolve
+the device of a topic and now stores only its identifier.
+
 ## Notes
 
-- Queries are projection-based (`DataValue` on the chart path,
+- Queries are projection-based (`DataValueDto` on the chart path,
   `ExportDataProjectionDto` on the export path) rather than entity-based, which
   keeps large result sets out of the persistence context.
 - `TopicTreeService` is `@Transactional`; all controllers extend `map-web`'s
