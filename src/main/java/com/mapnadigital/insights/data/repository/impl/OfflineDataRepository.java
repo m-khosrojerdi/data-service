@@ -26,7 +26,7 @@ public class OfflineDataRepository implements IOfflineDataRepository {
     public void save(OfflineDataDto dto) {
         try {
             Connection connection = dataSource.getConnection();
-            String sql = "{ CALL cmn.fnc_save_data(?::text, ?::text, ?::timestamp with time zone) }";
+            String sql = "{ CALL data_history.fnc_save_data(?::text, ?::text, ?::timestamp with time zone) }";
             CallableStatement callableStatement = connection.prepareCall(sql);
             callableStatement.setString(1, dto.getTopic());// "p_topic"
             callableStatement.setString(2, dto.getPayload());// "p_value"

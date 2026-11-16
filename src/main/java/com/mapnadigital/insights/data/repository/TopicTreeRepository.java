@@ -35,9 +35,9 @@ public interface TopicTreeRepository extends JpaRepository<TopicTree, Long> {
 
     @Query(value = """
             WITH RECURSIVE subtree AS (
-                SELECT * FROM topic_tree WHERE topic = :TOPIC
+                SELECT * FROM data_history.topic_tree WHERE topic = :TOPIC
                 UNION ALL
-                SELECT n.* FROM topic_tree n
+                SELECT n.* FROM data_history.topic_tree n
                 JOIN subtree s ON n.parent_id = s.id
                 WHERE n.path NOT LIKE '%/alarm%'
             )

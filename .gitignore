@@ -5,3 +5,6 @@
 logs
 *.log
 *.DS_Store
+release.sh
+docker-compose.yml
+.env

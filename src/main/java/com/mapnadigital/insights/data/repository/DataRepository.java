@@ -13,7 +13,7 @@ import java.util.List;
 public interface DataRepository extends JpaRepository<Data, Long> {
 
     @Query(value = "select dateandtime as datetime, aggr_value as value\n" +
-            "from cmn.fnc_get_aggr_data(:TOPIC,\n" +
+            "from data_history.fnc_get_aggr_data(:TOPIC,\n" +
             "                           cast(:START_DATE as timestamp),\n" +
             "                           cast(:END_DATE as timestamp),\n" +
             "                           :AGGREGATION,\n" +

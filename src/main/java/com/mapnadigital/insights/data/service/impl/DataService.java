@@ -1,8 +1,9 @@
 package com.mapnadigital.insights.data.service.impl;
 
-import com.google.gson.Gson;
 import com.mapnadigital.insights.common.execption.ServiceException;
 import com.mapnadigital.insights.common.payload.file.FileManagerResponse;
+import com.mapnadigital.insights.common.payload.notification.WebSocketMessage;
+import com.mapnadigital.insights.common.payload.notification.WebSocketPublishRequest;
 import com.mapnadigital.insights.common.util.DateTimeUtil;
 import com.mapnadigital.insights.common.util.ExcelUtil;
 import com.mapnadigital.insights.common.util.StringUtil;
@@ -14,9 +15,10 @@ import com.mapnadigital.insights.data.dto.data.ExportRequestDto;
 import com.mapnadigital.insights.data.dto.data.SignalDto;
 import com.mapnadigital.insights.data.repository.DataRepository;
 import com.mapnadigital.insights.data.service.IDataService;
-import com.mapnadigital.insights.data.service.WebSocketService;
+import com.mapnadigital.insights.web.client.NotificationApiClient;
 import com.mapnadigital.insights.web.file.FileManagerTemplate;
 import com.mapnadigital.insights.web.util.HttpRequest;
+import com.mapnadigital.insights.web.util.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -41,11 +43,11 @@ import static com.mapnadigital.insights.data.util.Constant.*;
 public class DataService implements IDataService {
 
     private final FileManagerTemplate fileManagerTemplate;
-    private final WebSocketService webSocketService;
+    private final NotificationApiClient notificationApiClient;
+    private final JwtTokenProvider jwtTokenProvider;
     private final TopicTreeService topicTreeService;
     private final DataRepository dataRepository;
     private final JmsTemplate jmsTemplate;
-    private final Gson gson;
 
     public List<DataValueDto> aggregate(String topic, String startDate, String endDate, String effectiveInterval, SignalDto signalDTO) {
         try {
@@ -72,6 +74,8 @@ public class DataService implements IDataService {
         String uuid = UUID.randomUUID().toString();
         exportRequest.setUuid(uuid);
         exportRequest.setUsername(HttpRequest.getUsername());
+        /* capture the JWT now: the asynchronous consumer has no request context to read it from */
+        exportRequest.setToken(jwtTokenProvider.parseJwt(HttpRequest.request()));
         jmsTemplate.convertAndSend(SIGNAL_SELECTOR_EXPORT_CONSUMER_QUEUE_NAME, exportRequest);
         return uuid;
     }
@@ -106,11 +110,27 @@ public class DataService implements IDataService {
             file = fileManagerTemplate.upload(ZipUtil.toZip(ExcelUtil.toBytes(workbook),
                     SIGNAL_SELECTOR_EXCEL_FILE_NAME), SIGNAL_SELECTOR_EXCEL_ZIP_FILE_NAME);
         } catch (Exception e) {
-            webSocketService.sendToUser(exportRequest.getUsername(), e.getMessage());
+            publish(exportRequest, SIGNAL_SELECTOR_EXPORT_ERROR_WEBSOCKET_TYPE, e.getMessage());
             throw new Exception(e);
         }
 
-        webSocketService.sendToUser(exportRequest.getUsername(), gson.toJson(ExportRequestDto.builder().uuid(exportRequest.getUuid()).file(file).build()));
+        publish(exportRequest, SIGNAL_SELECTOR_EXPORT_WEBSOCKET_TYPE,
+                ExportRequestDto.builder().uuid(exportRequest.getUuid()).file(file).build());
+    }
+
+    /**
+     * Pushes the outcome of an export to the requesting client through the centralized
+     * WebSocket infrastructure of {@code notification-service}.
+     *
+     * @param exportRequest the consumed export request, carrying the target user and its JWT
+     * @param type          the message type the client dispatches on
+     * @param payload       the payload of the message
+     */
+    private void publish(ExportRequestDto exportRequest, String type, Object payload) {
+        notificationApiClient.publish(WebSocketPublishRequest.builder()
+                .usernames(List.of(exportRequest.getUsername()))
+                .message(WebSocketMessage.builder().type(type).payload(payload).build())
+                .build(), exportRequest.getToken());
     }
 
     private Workbook createExcel(ExportRequestDto exportRequest) {

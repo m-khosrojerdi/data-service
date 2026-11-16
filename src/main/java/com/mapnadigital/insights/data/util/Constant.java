@@ -10,4 +10,14 @@ public interface Constant {
     String SIGNAL_SELECTOR_EXCEL_FILE_NAME = "data.xlsx";
     String SIGNAL_SELECTOR_EXCEL_ZIP_FILE_NAME = "data.zip";
     String SIGNAL_SELECTOR_KILO_TOPICS_REGEX = ".*(ace|acebase|appe|reae)$";
+
+    /**
+     * WebSocket message type pushed when an export is ready.
+     */
+    String SIGNAL_SELECTOR_EXPORT_WEBSOCKET_TYPE = "data.export";
+
+    /**
+     * WebSocket message type pushed when an export fails.
+     */
+    String SIGNAL_SELECTOR_EXPORT_ERROR_WEBSOCKET_TYPE = "data.export.error";
 }

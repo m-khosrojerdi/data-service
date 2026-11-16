@@ -3,6 +3,7 @@ package com.mapnadigital.insights.data.controller;
 import com.google.gson.reflect.TypeToken;
 import com.mapnadigital.insights.common.util.DateTimeUtil;
 import com.mapnadigital.insights.data.api.ApiClient;
+import com.mapnadigital.insights.data.documentation.DataDocumentation;
 import com.mapnadigital.insights.data.dto.data.ExportRequestDto;
 import com.mapnadigital.insights.data.dto.data.SignalDto;
 import com.mapnadigital.insights.data.dto.data.SignalSelectorDto;
@@ -18,8 +19,6 @@ import com.mapnadigital.insights.web.dto.ResponseBody;
 import com.mapnadigital.insights.web.dto.ResponseEntityTemplate;
 import com.mapnadigital.insights.web.enumeration.Role;
 import com.mapnadigital.insights.web.util.HttpRequest;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -30,27 +29,29 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.mapnadigital.insights.common.util.Constant.*;
-import static com.mapnadigital.insights.web.enumeration.Constant.REALM;
-import static com.mapnadigital.insights.web.enumeration.Swagger.ACCESS_TOKEN;
-import static com.mapnadigital.insights.web.enumeration.Swagger.LANGUAGE;
 
+/**
+ * REST API of the telemetry values.
+ * <p>
+ * The endpoints are documented with {@code springdoc-openapi}; the documentation lives in
+ * {@link DataDocumentation}.
+ *
+ * @author Mohammad Khosrojerdi khosrojerdi.mohammad@gmail.com
+ * @since 1.0
+ */
 @RestController
 @CrossOrigin(origins = "*")
 @RequestMapping("/data")
 @RequiredArgsConstructor
-public class DataController extends Base {
+public class DataController extends Base implements DataDocumentation {
     private final ApiService apiService;
     private final DataService dataService;
     private final BaselineService baselineService;
     private final ResponseEntityTemplate responseEntityTemplate;
 
+    @Override
     @PostMapping({"/signal-selector", "get-data"})
     @HasAnyRole(Role.CUSTOMER)
-    @SecurityRequirements(value = {
-            @SecurityRequirement(name = ACCESS_TOKEN),
-            @SecurityRequirement(name = LANGUAGE),
-            @SecurityRequirement(name = REALM)
-    })
     public ResponseBody<?> signalSelector(@Valid @RequestBody SignalSelectorDto view) {
 
         List<SignalDto> signalViews;
@@ -93,13 +94,9 @@ public class DataController extends Base {
         return String.join(SLASH, deviceView.getDeviceTypeName(), serial, "data", param);
     }
 
+    @Override
     @PostMapping("/signal-selector/export")
     @HasAnyRole(Role.CUSTOMER)
-    @SecurityRequirements(value = {
-            @SecurityRequirement(name = ACCESS_TOKEN),
-            @SecurityRequirement(name = LANGUAGE),
-            @SecurityRequirement(name = REALM)
-    })
     public ResponseBody<SignalSelectorDto> signalSelectorExport(@Valid @RequestBody SignalSelectorDto view) {
 
         view.setExportUuid(dataService.export(ExportRequestDto.builder().startDate(view.getStartDate())
